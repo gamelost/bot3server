@@ -29,13 +29,15 @@ import (
 	"syscall"
 )
 
+const DEFAULT_CONFIG_FILENAME = "bot3server.config"
+
 func main() {
 
 	// the quit channel
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	config, err := iniconf.ReadConfigFile("bot3api.config")
+	config, err := iniconf.ReadConfigFile(DEFAULT_CONFIG_FILENAME)
 	if err != nil {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
