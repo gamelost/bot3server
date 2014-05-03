@@ -8,6 +8,10 @@ import (
 
 type NextWeddingService struct{}
 
+func (svc *NextWeddingService) NewService() server.BotHandler {
+	return &NextWeddingService{}
+}
+
 func (svc *NextWeddingService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	botResponse.SetSingleLineResponse(durationToWeddingDate())

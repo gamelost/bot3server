@@ -23,6 +23,10 @@ const stateCityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/co
 const cityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/conditions/q/%s.json"
 const airportAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/conditions/q/%s.json"
 
+func (svc *WeatherConditionsService) NewService() server.BotHandler {
+	return &WeatherConditionsService{}
+}
+
 func init() {
 	// Create a cache with a default expiration time of 5 minutes, and which
 	// purges expired items every 30 seconds

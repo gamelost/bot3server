@@ -9,9 +9,9 @@ import (
 	"github.com/gamelost/bot3server/module/inconceivable"
 	"github.com/gamelost/bot3server/module/slap"
 	//"github.com/gamelost/bot3server/module/sleep"
-	"github.com/gamelost/bot3server/module/nextwedding"
-	//"github.com/gamelost/bot3server/module/panic"
 	"github.com/gamelost/bot3server/module/cah"
+	"github.com/gamelost/bot3server/module/nextwedding"
+	// "github.com/gamelost/bot3server/module/panic"
 	"github.com/gamelost/bot3server/module/remindme"
 	"github.com/gamelost/bot3server/module/zed"
 	//"github.com/gamelost/bot3server/module/testcommands"
@@ -88,18 +88,17 @@ func (ba *BotApp) initServices() error {
 	ba.Handlers = make(map[string]server.BotHandler)
 
 	// implement all services
-	ba.AddHandler("fight", new(fight.FightService))
-	ba.AddHandler("cah", new(cah.CahService))
-	ba.AddHandler("slap", new(slap.SlapService))
-	ba.AddHandler("inconceivable", new(inconceivable.InconceivableService))
-	ba.AddHandler("help", new(help.HelpService))
-	ba.AddHandler("remindme", new(remindme.RemindMeService))
-	ba.AddHandler("nextwedding", new(nextwedding.NextWeddingService))
-	ba.AddHandler("weather", new(wuconditions.WeatherConditionsService))
-	ba.AddHandler("forecast", new(wuforecast.WeatherForecastService))
-	//ba.AddHandler("panic", new(panic.PanicService))
-	ba.AddHandler("zed", new(zed.ZedsDeadService))
-	ba.AddHandler("boulderingtime", new(boulderingtime.BoulderingTimeService))
+	ba.AddHandler("fight", (new(fight.FightService)).NewService())
+	ba.AddHandler("cah", (new(cah.CahService)).NewService())
+	ba.AddHandler("slap", (new(slap.SlapService)).NewService())
+	ba.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService())
+	ba.AddHandler("help", (new(help.HelpService)).NewService())
+	ba.AddHandler("remindme", (new(remindme.RemindMeService)).NewService())
+	ba.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService())
+	ba.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService())
+	ba.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService())
+	ba.AddHandler("zed", (new(zed.ZedsDeadService)).NewService())
+	ba.AddHandler("boulderingtime", (new(boulderingtime.BoulderingTimeService)).NewService())
 	return nil
 }
 

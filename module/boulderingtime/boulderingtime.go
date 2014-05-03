@@ -7,6 +7,12 @@ import (
 
 type BoulderingTimeService struct{}
 
+func (svc *BoulderingTimeService) NewService() server.BotHandler {
+
+	var newSvc = &BoulderingTimeService{}
+	return newSvc
+}
+
 func (svc *BoulderingTimeService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	botResponse.SetSingleLineResponse(fmt.Sprintf("Its always bouldering time!"))

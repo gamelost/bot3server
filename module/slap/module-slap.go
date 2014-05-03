@@ -9,6 +9,10 @@ import (
 type SlapService struct {
 }
 
+func (svc *SlapService) NewService() server.BotHandler {
+	return &SlapService{}
+}
+
 func (svc *SlapService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	victim := parseInput(botRequest.RawLine.Text())

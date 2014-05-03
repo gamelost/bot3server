@@ -6,7 +6,7 @@ import (
 	//"fmt"
 	"github.com/gamelost/bot3server/server"
 	"io/ioutil"
-	"log"
+	// "log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -14,10 +14,11 @@ import (
 	"unicode"
 )
 
-var rng *rand.Rand
-var cahCardCollection *CahCardCollection
+// source URL for CAH card templates
+const CAH_SOURCE_URL = "https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/source/cards.json"
 
 type CahService struct {
+	RandomNG          *rand.Rand
 	CahCardCollection *CahCardCollection
 }
 
@@ -36,111 +37,137 @@ type CahCardCollection []struct {
 	Text       string `json:"text"`
 }
 
-func (ccc CahCardCollection) CardCount() int {
-	return len(ccc)
+func (svc *CahService) NewService() server.BotHandler {
+
+	var newSvc = &CahService{}
+
+	newSvc.CahCardCollection = &CahCardCollection{}
+
+	// set up the rng
+	newSvc.RandomNG = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	// download the CAH json file
+	resp, err := http.Get(CAH_SOURCE_URL)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	json.Unmarshal(body, newSvc.CahCardCollection)
+
+	return newSvc
 }
 
-func (ccc CahCardCollection) RandomCard() *CahCard {
-	randVal := rng.Intn(len(ccc))
-	return &CahCard{CardType: ccc[randVal].CardType, Id: ccc[randVal].Id, NumAnswers: ccc[randVal].NumAnswers, Text: ccc[randVal].Text}
+func (svc *CahService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+
+	strInput := parseInput(botRequest.RawLine.Text())
+	if len(strInput) > 0 {
+		botResponse.SetSingleLineResponse(svc.RandomCahMessageWithArgument(strInput))
+	} else {
+		botResponse.SetSingleLineResponse(svc.RandomCahMessage())
+	}
 }
 
-func (ccc CahCardCollection) RandomQuestionCard() *CahCard {
+func (svc *CahService) RandomCard() *CahCard {
 
-	cCard := ccc.RandomCard()
+	randVal := svc.RandomNG.Intn(svc.CahCardCollection.CardCount())
+	return svc.CahCardCollection.GetCardAt(randVal)
+}
+
+func (svc *CahService) RandomQuestionCard() *CahCard {
+
+	cCard := svc.RandomCard()
 	for {
 		if cCard.CardType == "Q" {
 			break
 		} else {
-			cCard = ccc.RandomCard()
+			cCard = svc.RandomCard()
 		}
 	}
 	return cCard
 }
 
-func (ccc CahCardCollection) RandomOneAnswerQuestionCard() *CahCard {
+func (svc *CahService) RandomOneAnswerQuestionCard() *CahCard {
 
-	cCard := ccc.RandomCard()
+	cCard := svc.RandomQuestionCard()
 	for {
-		if cCard.CardType == "Q" && cCard.NumAnswers == 1 {
+		if cCard.NumAnswers == 1 {
 			break
 		} else {
-			cCard = ccc.RandomCard()
+			cCard = svc.RandomQuestionCard()
 		}
 	}
 	return cCard
 }
 
-func (ccc CahCardCollection) RandomAnswerCard() *CahCard {
+func (svc *CahService) RandomAnswerCard() *CahCard {
 
-	cCard := ccc.RandomCard()
+	cCard := svc.RandomCard()
 	for {
 		if cCard.CardType == "A" {
 			break
 		} else {
-			cCard = ccc.RandomCard()
+			cCard = svc.RandomCard()
 		}
 	}
 	return cCard
 }
 
-func (ccc CahCardCollection) RandomCahMessage() string {
+func (svc *CahService) MessageFromQuestionAndAnswers(questionStr string, answers []string) string {
 
 	var finalStr string
-	qCard := ccc.RandomQuestionCard()
+	substrings := strings.Split(questionStr, "_")
+	if len(substrings) < 2 {
+		finalStr = questionStr + " " + convertToStandaloneAnswer(answers[0])
+	} else {
+
+		ansCounter := 0
+		for _, value := range substrings {
+			finalStr += value
+			if ansCounter < len(answers) {
+				finalStr += convertToInlineAnswer(answers[ansCounter])
+				ansCounter++
+			}
+		}
+	}
+
+	return finalStr
+}
+
+func (svc *CahService) RandomCahMessage() string {
+
+	qCard := svc.RandomQuestionCard()
 
 	// find out how many answers we need
 	numAnswers := qCard.NumAnswers
 
 	// queue up all needed answer cards
-	var ansCards = make([]*CahCard, numAnswers)
+	var answers = make([]string, numAnswers)
 	for i := 0; i < int(numAnswers); i++ {
-		ansCards[i] = ccc.RandomAnswerCard()
+		answers[i] = svc.RandomAnswerCard().Text
 	}
 
-	substrings := strings.Split(qCard.Text, "_")
-	if len(substrings) < 2 {
-		finalStr = qCard.Text + " " + ansCards[0].Text
-	} else {
-
-		ansCounter := 0
-		for _, value := range substrings {
-			finalStr += value
-			if ansCounter < len(ansCards) {
-				finalStr += sanitizeAnswerText(ansCards[ansCounter].Text)
-				ansCounter++
-			}
-		}
-	}
-
-	return finalStr
+	return svc.MessageFromQuestionAndAnswers(qCard.Text, answers)
 }
 
-func (ccc CahCardCollection) RandomCahMessageWithArgument(arg string) string {
+func (svc *CahService) RandomCahMessageWithArgument(argStr string) string {
 
-	var finalStr string
-	qCard := ccc.RandomOneAnswerQuestionCard()
+	qCard := svc.RandomOneAnswerQuestionCard()
 
 	// queue up all needed answer cards
-	var ansCards = make([]*CahCard, 1)
-	ansCards[0] = &CahCard{Text: arg}
+	var answers = make([]string, 1)
+	answers[0] = argStr
 
-	substrings := strings.Split(qCard.Text, "_")
-	if len(substrings) < 2 {
-		finalStr = qCard.Text + " " + ansCards[0].Text
-	} else {
+	return svc.MessageFromQuestionAndAnswers(qCard.Text, answers)
+}
 
-		ansCounter := 0
-		for _, value := range substrings {
-			finalStr += value
-			if ansCounter < len(ansCards) {
-				finalStr += sanitizeAnswerText(ansCards[ansCounter].Text)
-				ansCounter++
-			}
-		}
-	}
+func (ccc CahCardCollection) CardCount() int {
+	return len(ccc)
+}
 
-	return finalStr
+func (ccc CahCardCollection) GetCardAt(cardLoc int) *CahCard {
+	return &CahCard{CardType: ccc[cardLoc].CardType, Id: ccc[cardLoc].Id, NumAnswers: ccc[cardLoc].NumAnswers, Text: ccc[cardLoc].Text}
 }
 
 func parseInput(input string) string {
@@ -151,7 +178,7 @@ func parseInput(input string) string {
 	return input
 }
 
-func sanitizeAnswerText(orig string) string {
+func convertToInlineAnswer(orig string) string {
 
 	runes := []rune(orig)
 	runes[0] = unicode.ToLower(runes[0])
@@ -159,36 +186,16 @@ func sanitizeAnswerText(orig string) string {
 	return strings.TrimRight(orig, ".")
 }
 
-func init() {
+func convertToStandaloneAnswer(orig string) string {
 
-	// set up the rng
-	rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+	runes := []rune(orig)
+	runes[0] = unicode.ToUpper(runes[0])
 
-	// download the CAH json file
-	// https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/source/cards.json
-	resp, err := http.Get("https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/source/cards.json")
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	cahCardCollection = &CahCardCollection{}
-	json.Unmarshal(body, cahCardCollection)
-
-	//log.Printf("Message: %s", cahCardCollection.RandomCahMessageWithArgument("Timmy"))
-	//log.Printf("Message2: %s", cahCardCollection.RandomCahMessage())
-
-	log.Println("Done with init()")
-}
-
-func (svc *CahService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
-
-	strInput := parseInput(botRequest.RawLine.Text())
-	if len(strInput) > 0 {
-		botResponse.SetSingleLineResponse(cahCardCollection.RandomCahMessageWithArgument(strInput))
+	// if no punctuation, add a period
+	lastChar := runes[len(runes)-1]
+	if lastChar == '.' || lastChar == '!' || lastChar == '?' {
+		return string(runes)
 	} else {
-		botResponse.SetSingleLineResponse(cahCardCollection.RandomCahMessage())
+		return string(runes) + "."
 	}
-
 }

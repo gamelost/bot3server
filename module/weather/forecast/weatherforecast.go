@@ -16,6 +16,10 @@ const stateCityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/fo
 const cityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/forecast/q/%s.json"
 const airportAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/forecast/q/%s.json"
 
+func (svc *WeatherForecastService) NewService() server.BotHandler {
+	return &WeatherForecastService{}
+}
+
 func (svc *WeatherForecastService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	var err error

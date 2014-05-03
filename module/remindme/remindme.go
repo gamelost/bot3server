@@ -9,6 +9,10 @@ import (
 
 type RemindMeService struct{}
 
+func (svc *RemindMeService) NewService() server.BotHandler {
+	return &RemindMeService{}
+}
+
 func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	arg := botRequest.LineTextWithoutCommand()

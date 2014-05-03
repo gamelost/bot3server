@@ -7,6 +7,7 @@ import (
 )
 
 type BotHandler interface {
+	NewService() BotHandler
 	Handle(botRequest *BotRequest, botResponse *BotResponse)
 }
 
