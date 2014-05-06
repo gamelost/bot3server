@@ -4,6 +4,7 @@ import (
 	"fmt"
 	irc "github.com/fluffle/goirc/client"
 	"strings"
+	"time"
 )
 
 type BotHandler interface {
@@ -26,6 +27,11 @@ type BotResponse struct {
 	ResponseType string
 	Target       string
 	Response     []string
+}
+
+type Bot3ServerHeartbeat struct {
+	ServerID  string
+	Timestamp time.Time
 }
 
 func (response *BotResponse) IsMultiLineResponse() bool {

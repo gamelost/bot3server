@@ -22,17 +22,21 @@ import (
 	//"github.com/gamelost/bot3server/module/howlongbeforeicanquityouintel"
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
-	"fmt"
 	nsq "github.com/bitly/go-nsq"
+	"github.com/twinj/uuid"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
 
 func main() {
+
+	// create unique UUID on startup
+	newUUID := uuid.NewV1()
 
 	// the quit channel
 	sigChan := make(chan os.Signal, 1)
@@ -43,52 +47,58 @@ func main() {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
 
-	bot3apiInput, _ := config.GetString("default", "bot3api-input")
+	bot3serverInput, _ := config.GetString("default", "bot3server-input")
 
 	// set up listener instance
-	incomingFromIRC, err := nsq.NewReader(bot3apiInput, "main")
+	incomingFromIRC, err := nsq.NewReader(bot3serverInput, "main")
 	if err != nil {
 		panic(err)
 		sigChan <- syscall.SIGINT
 	}
 
 	// set up channels
-	// incomingFromNSQChan := make(chan *nsq.Message)
 	outgoingToNSQChan := make(chan *server.BotResponse)
 
 	outputWriter := nsq.NewWriter("127.0.0.1:4150")
 
+	// set up heartbeat ticker
+	heartbeatTicker := time.NewTicker(1 * time.Second)
+
 	// initialize the handlers
-	botApp := &BotApp{Config: config, OutgoingChan: outgoingToNSQChan}
+	botApp := &BotApp{Config: config, OutgoingChan: outgoingToNSQChan, UniqueID: newUUID}
 	botApp.initServices()
 
 	incomingFromIRC.AddHandler(botApp)
 	incomingFromIRC.ConnectToLookupd("127.0.0.1:4161")
 
-	go HandleOutgoingToNSQ(outgoingToNSQChan, outputWriter)
+	go HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
 
-	log.Printf("Done starting up. Waiting on quit signal.")
+	log.Printf("Done starting up. UUID:[%s]. Waiting on quit signal.", newUUID.String())
 	<-sigChan
 }
 
-func HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, outputWriter *nsq.Writer) {
+func HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
 
 	for {
 		select {
 		case msg := <-outgoingToNSQChan:
-			log.Println("Sending outgoing message to NSQ")
 			val, _ := json.Marshal(msg)
-			outputWriter.Publish("bot3api-output", val)
+			outputWriter.Publish("bot3server-output", val)
+			break
+		case t := <-heartbeatTicker:
+			hb := &server.Bot3ServerHeartbeat{ServerID: serverID.String(), Timestamp: t}
+			val, _ := json.Marshal(hb)
+			outputWriter.Publish("bot3server-heartbeat", val)
 			break
 		}
 	}
 }
 
 type BotApp struct {
-	Config   *iniconf.ConfigFile
-	Handlers map[string]server.BotHandler
-	// IncomingChan chan *nsq.Message
+	Config       *iniconf.ConfigFile
+	Handlers     map[string]server.BotHandler
 	OutgoingChan chan *server.BotResponse
+	UniqueID     uuid.UUID
 }
 
 func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
@@ -121,7 +131,6 @@ func (ba *BotApp) initServices() error {
 
 func (ba *BotApp) HandleMessage(message *nsq.Message) error {
 
-	log.Println("Handling Message")
 	//	ba.IncomingChan <- message
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
@@ -137,7 +146,6 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 	// mabye a good idea to automatically-disable the module if it panics too frequently
 
 	// throwout malformed requests
-	fmt.Printf("Line is %s", botRequest)
 	if botRequest.RawLine == nil {
 		return nil
 	}
