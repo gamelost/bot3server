@@ -18,9 +18,9 @@ type FightService struct {
 func (svc *FightService) NewService() server.BotHandler {
 
 	var newSvc = &FightService{}
-	svc.RandomNG = rand.New(rand.NewSource(time.Now().UnixNano()))
-	svc.FightMethods = []string{"tickles to death", "pummels", "quarters", "garrotes", "butchers", "obliterates", "tears apart limb by limb", "annihilates", "rampages past", "dismembers", "kneecaps", "uses force lightning to crispy-critter", "gets blown out of the sky by", "executes a well-timed Harai goshi on", "smothers"}
-	svc.FightArenas = []string{"in a gentlemanly game of chess", "in a fight to the pain", "on the dark side of the moon", "in the mens restroom", "in the ladies restroom", "in a barroom brawl", "in a slapfest", "with dull flaming scimitars", "on the planet Hoth", "with elephant foreskins filled with brie"}
+	newSvc.RandomNG = rand.New(rand.NewSource(time.Now().UnixNano()))
+	newSvc.FightMethods = []string{"tickles to death", "pummels", "quarters", "garrotes", "butchers", "obliterates", "tears apart limb by limb", "annihilates", "rampages past", "dismembers", "kneecaps", "uses force lightning to crispy-critter", "gets blown out of the sky by", "executes a well-timed Harai goshi on", "smothers"}
+	newSvc.FightArenas = []string{"in a gentlemanly game of chess", "in a fight to the pain", "on the dark side of the moon", "in the mens restroom", "in the ladies restroom", "in a barroom brawl", "in a slapfest", "with dull flaming scimitars", "on the planet Hoth", "with elephant foreskins filled with brie"}
 	return newSvc
 }
 
