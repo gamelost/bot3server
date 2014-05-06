@@ -13,5 +13,5 @@ func (svc *HelpService) NewService() server.BotHandler {
 
 func (svc *HelpService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
-	botResponse.SetSingleLineResponse("i wont make you coffee and give a reach-around but you can ask the following: !remindme !fight !cah !inconceivable !slap !sleep !weather !forecast !nextwedding !zed")
+	botResponse.SetSingleLineResponse("i wont make you coffee and give a reach-around but you can ask the following: !remindme !fight !cah !inconceivable !slap !weather !forecast !nextwedding !zed")
 }
