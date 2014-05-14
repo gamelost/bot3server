@@ -32,6 +32,15 @@ import (
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
+const CONFIG_CAT_DEFAULT = "default"
+
+// nsq specific constants
+const CONFIG_CAT_NSQ = "nsq"
+const CONFIG_BOT3SERVER_INPUT = "bot3server-input"
+const CONFIG_BOT3SERVER_OUTPUT = "bot3server-output"
+const CONFIG_OUTPUT_WRITER_ADDR = "output-writer-address"
+const CONFIG_LOOKUPD_ADDR = "lookupd-address"
+const TOPIC_MAIN = "main"
 
 func main() {
 
@@ -47,10 +56,12 @@ func main() {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
 
-	bot3serverInput, _ := config.GetString("default", "bot3server-input")
+	bot3serverInput, _ := config.GetString(CONFIG_CAT_DEFAULT, CONFIG_BOT3SERVER_INPUT)
+	outputWriterAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
+	lookupdAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_LOOKUPD_ADDR)
 
 	// set up listener instance
-	incomingFromIRC, err := nsq.NewReader(bot3serverInput, "main")
+	incomingFromIRC, err := nsq.NewReader(bot3serverInput, TOPIC_MAIN)
 	if err != nil {
 		panic(err)
 		sigChan <- syscall.SIGINT
@@ -59,7 +70,7 @@ func main() {
 	// set up channels
 	outgoingToNSQChan := make(chan *server.BotResponse)
 
-	outputWriter := nsq.NewWriter("127.0.0.1:4150")
+	outputWriter := nsq.NewWriter(outputWriterAddress)
 
 	// set up heartbeat ticker
 	heartbeatTicker := time.NewTicker(1 * time.Second)
@@ -69,7 +80,7 @@ func main() {
 	botApp.initServices()
 
 	incomingFromIRC.AddHandler(botApp)
-	incomingFromIRC.ConnectToLookupd("127.0.0.1:4161")
+	incomingFromIRC.ConnectToLookupd(lookupdAddress)
 
 	go HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
 
@@ -169,7 +180,7 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 		handler := ba.GetHandler(command)
 
 		if handler != nil {
-			log.Printf("Assigning handler for: %s\n", command)
+			//log.Printf("Assigning handler for: %s\n", command)
 			botResponse := &server.BotResponse{Target: botRequest.RawLine.Target()}
 			handler.Handle(botRequest, botResponse)
 			ba.OutgoingChan <- botResponse
