@@ -33,6 +33,6 @@ func durationToWeddingDate() string {
 		durationHours := (durationInMinutes - (durationDays * 60 * 24)) / 60
 		durationMinutes := durationInMinutes - ((durationDays * 60 * 24) + (durationHours * 60))
 
-		return fmt.Sprintf("Only %d days, %d hours and %d minutes left for natech to come to his senses.  Flee while you can, FLEEEEEE!", durationDays, durationHours, durationMinutes)
+		return fmt.Sprintf("Only %d days, %d hours and %d minutes left for natech to come to his senses. Flee while you can, FLEEEEEE!", durationDays, durationHours, durationMinutes)
 	}
 }
