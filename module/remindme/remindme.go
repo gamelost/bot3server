@@ -19,11 +19,11 @@ func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *s
 	resp, dur, err := HandleCommand(arg)
 
 	if err != nil {
-		botResponse.SetSingleLineResponse("Could not understand your request.  Should be in [duration] [message] format.")
+		botResponse.SetSingleLineResponse("Could not understand your request. Should be in [duration] [message] format.")
 	} else {
 
 		if dur < 0 {
-			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, only your mom would ask you to do something in the past.  You're lame.", botRequest.RawLine.Nick))
+			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, only your mom would ask you to do something in the past. You're lame.", botRequest.RawLine.Nick))
 		} else {
 			time.Sleep(dur)
 			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.RawLine.Nick, resp))
