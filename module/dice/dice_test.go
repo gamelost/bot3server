@@ -12,9 +12,9 @@ func init() {
 
 func TestRoll(t *testing.T) {
 
-	result := svc.RollDice("1d4")
-	log.Printf(fmt.Sprintf("Result: %d, Rolls: %s", result.Result, result.Details))
+	result := svc.RollDice("(+ 1 3)")
+	log.Printf(fmt.Sprintf("Result: %s, Rolls: %s", result.Input, result.Output))
 
-	r2 := svc.RollDice("2d6;1d4")
-	log.Printf(fmt.Sprintf("Result: %d, Rolls: %s", r2.Result, r2.Details))
+	r2 := svc.RollDice("(+ 1 4)")
+	log.Printf(fmt.Sprintf("Result: %s, Rolls: %s", r2.Input, r2.Output))
 }

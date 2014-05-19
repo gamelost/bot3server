@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	url "net/url"
 	"strings"
 )
 
@@ -14,11 +15,10 @@ type DiceService struct {
 }
 
 type DiceResult struct {
-	Result       int64  `json:"result"`
-	Details      string `json:"details"`
-	Code         string `json:"code"`
-	Timestamp    int64  `json:"timestamp"`
-	Illustration string `json:"illustration"`
+	Error       string `json:"error"`
+	Input       string `json:"input"`
+	Output      string `json:"output"`
+	Description string `json:"description"`
 }
 
 func (svc *DiceService) NewService() server.BotHandler {
@@ -29,7 +29,7 @@ func (svc *DiceService) Handle(botRequest *server.BotRequest, botResponse *serve
 
 	log.Println("Received Handle for !dice")
 	result := svc.RollDice(parseInput(botRequest.RawLine.Text()))
-	strResp := fmt.Sprintf("%s: your roll (%s) result: %d, Rolls: %s", botRequest.RawLine.Nick, result.Code, result.Result, result.Details)
+	strResp := fmt.Sprintf("%s: your roll:[%s] result:[%s], description:[%s]", botRequest.RawLine.Nick, result.Input, result.Output, result.Description)
 	botResponse.SetSingleLineResponse(strResp)
 }
 
@@ -37,7 +37,10 @@ func (svc *DiceService) RollDice(diceString string) *DiceResult {
 
 	log.Println("Rolling dice")
 	// download the CAH json file
-	resp, err := http.Get("http://rolz.org/api/?" + diceString + ".json")
+	var escapedInput = url.QueryEscape(diceString)
+	var urlStr = "http://lethalcode.net:8080/roll?src=" + escapedInput
+	log.Println(urlStr)
+	resp, err := http.Get(urlStr)
 	if err != nil {
 		panic(err)
 	}
@@ -45,6 +48,11 @@ func (svc *DiceService) RollDice(diceString string) *DiceResult {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Printf("Output: %s\n", body)
 	result := &DiceResult{}
 
