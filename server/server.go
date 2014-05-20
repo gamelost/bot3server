@@ -54,6 +54,11 @@ func (response *BotResponse) SetSingleLineResponse(rstr string) {
 	response.Response = responseArr
 }
 
+func (response *BotResponse) SetMultipleLineResponse(rstr []string) {
+
+	response.Response = rstr
+}
+
 func (request *BotRequest) RequestIsCommand() bool {
 
 	return stringIsCommand(request.RawLine.Text())

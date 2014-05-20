@@ -12,5 +12,5 @@ func Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 		resp[i] = fmt.Sprintf("Line %d", i)
 	}
 
-	botResponse.Response = resp
+	botResponse.SetMultipleLineResponse(resp)
 }

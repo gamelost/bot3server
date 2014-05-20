@@ -34,7 +34,7 @@ func (svc *WeatherForecastService) Handle(botRequest *server.BotRequest, botResp
 		log.Printf("error is: %v", err)
 		botResponse.SetSingleLineResponse(err.Error())
 	} else {
-		botResponse.Response = resp
+		botResponse.SetMultipleLineResponse(resp)
 	}
 }
 
