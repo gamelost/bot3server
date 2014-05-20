@@ -15,7 +15,7 @@ import (
 )
 
 // source URL for CAH card templates
-const CAH_SOURCE_URL = "https://raw.githubusercontent.com/nodanaonlyzuul/against-humanity/master/source/cards.json"
+const CAH_SOURCE_URL = "https://raw.githubusercontent.com/gamelost/bot3server/master/module/cah/cah-cards-standard.json"
 
 type CahService struct {
 	RandomNG          *rand.Rand
