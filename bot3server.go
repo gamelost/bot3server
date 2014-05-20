@@ -17,6 +17,7 @@ import (
 	"github.com/gamelost/bot3server/module/zed"
 	//"github.com/gamelost/bot3server/module/testcommands"
 	"github.com/gamelost/bot3server/module/boulderingtime"
+	"github.com/gamelost/bot3server/module/catfacts"
 	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
 	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
 	//"github.com/gamelost/bot3server/module/howlongbeforeicanquityouintel"
@@ -137,6 +138,7 @@ func (ba *BotApp) initServices() error {
 	ba.AddHandler("zed", (new(zed.ZedsDeadService)).NewService())
 	ba.AddHandler("boulderingtime", (new(boulderingtime.BoulderingTimeService)).NewService())
 	ba.AddHandler("dice", (new(dice.DiceService)).NewService())
+	ba.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService())
 	return nil
 }
 
