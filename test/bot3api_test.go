@@ -1,8 +1,8 @@
 package bot3api
 
 import (
-	irc "github.com/fluffle/goirc/client"
 	"github.com/gamelost/bot3server/server"
+	irc "github.com/gamelost/goirc/client"
 	"log"
 	"net/rpc"
 	"testing"
