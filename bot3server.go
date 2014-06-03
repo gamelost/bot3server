@@ -28,9 +28,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
-	"strings"
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
@@ -125,10 +125,10 @@ func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
 	// If plugins string does not exist, assume that all plugins
 	// are enabled.
 	if err == nil {
-	  log.Printf("Plugins enabled: %s", plugins)
-	  if !strings.Contains(" " + plugins + " ", " " + key + " ") {
-		return
-	  }
+		log.Printf("Plugins enabled: %s", plugins)
+		if !strings.Contains(" "+plugins+" ", " "+key+" ") {
+			return
+		}
 	}
 	ba.Handlers[key] = h
 }
@@ -142,8 +142,8 @@ func (ba *BotApp) initServices() error {
 	ba.Handlers = make(map[string]server.BotHandler)
 
 	// implement all services
-        ba.AddHandler("fight", (new(fight.FightService)).NewService())
-        ba.AddHandler("cah", (new(cah.CahService)).NewService())
+	ba.AddHandler("fight", (new(fight.FightService)).NewService())
+	ba.AddHandler("cah", (new(cah.CahService)).NewService())
 	ba.AddHandler("slap", (new(slap.SlapService)).NewService())
 	ba.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService())
 	ba.AddHandler("help", (new(help.HelpService)).NewService())
