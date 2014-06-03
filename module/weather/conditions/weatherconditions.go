@@ -19,11 +19,17 @@ type WeatherConditionsService struct {
 var airportCodeCache *cache.Cache
 var weatherConditionsCache *cache.Cache
 
-const stateCityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/conditions/q/%s/%s.json"
-const cityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/conditions/q/%s.json"
-const airportAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/conditions/q/%s.json"
+var stateCityAPICallUrl string
+var cityAPICallUrl string
+var airportAPICallUrl string
 
 func (svc *WeatherConditionsService) NewService() server.BotHandler {
+	apiurl, _ := server.ServerConfig.GetString("weather", "wundergroundapiurl")
+	apikey, _ := server.ServerConfig.GetString("weather", "wundergroundapikey")
+	apipath := apiurl + apikey
+	stateCityAPICallUrl = apipath + "/conditions/q/%s/%s.json"
+	cityAPICallUrl = apipath + "/conditions/q/%s.json"
+	airportAPICallUrl = apipath + "/conditions/q/%s.json"
 	return &WeatherConditionsService{}
 }
 

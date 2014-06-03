@@ -12,11 +12,17 @@ import (
 
 type WeatherForecastService struct{}
 
-const stateCityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/forecast/q/%s/%s.json"
-const cityAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/forecast/q/%s.json"
-const airportAPICallUrl = "http://api.wunderground.com/api/84a6128036456b39/forecast/q/%s.json"
+var stateCityAPICallUrl string
+var cityAPICallUrl string
+var airportAPICallUrl string
 
 func (svc *WeatherForecastService) NewService() server.BotHandler {
+	apiurl, _ := server.ServerConfig.GetString("weather", "wundergroundapiurl")
+	apikey, _ := server.ServerConfig.GetString("weather", "wundergroundapikey")
+	apipath := apiurl + apikey
+	stateCityAPICallUrl = apipath + "/forecast/q/%s/%s.json"
+	cityAPICallUrl = apipath + "/forecast/q/%s.json"
+	airportAPICallUrl = apipath + "/forecast/q/%s.json"
 	return &WeatherForecastService{}
 }
 

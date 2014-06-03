@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
-	conf = config
+	server.ServerConfig = config
 
 	bot3serverInput, _ := config.GetString(CONFIG_CAT_DEFAULT, CONFIG_BOT3SERVER_INPUT)
 	outputWriterAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
@@ -119,13 +119,10 @@ type BotApp struct {
 }
 
 func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
-	log.Printf("Add Handler for %s.", key)
-	plugins, err := conf.GetString(CONFIG_CAT_PLUGINS, "enabled")
-	log.Printf("err: %r", err)
+	plugins, err := server.ServerConfig.GetString(CONFIG_CAT_PLUGINS, "enabled")
 	// If plugins string does not exist, assume that all plugins
 	// are enabled.
 	if err == nil {
-		log.Printf("Plugins enabled: %s", plugins)
 		if !strings.Contains(" "+plugins+" ", " "+key+" ") {
 			return
 		}
