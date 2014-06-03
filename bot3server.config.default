@@ -11,4 +11,4 @@ lookupd-address=localhost:4161
 
 [weather]
 wundergroundapiurl = http://api.wunderground.com/api/
-wundergroundapikey = 84a6128036456b39
+wundergroundapikey = <sample key here>
