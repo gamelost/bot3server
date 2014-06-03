@@ -58,11 +58,11 @@ func main() {
 	}
 
 	bot3serverInput, _ := config.GetString(CONFIG_CAT_DEFAULT, CONFIG_BOT3SERVER_INPUT)
-	outputWriterAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
+	outputProducerAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
 	lookupdAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_LOOKUPD_ADDR)
 
 	// set up listener instance
-	incomingFromIRC, err := nsq.NewReader(bot3serverInput, TOPIC_MAIN)
+	incomingFromIRC, err := nsq.NewConsumer(bot3serverInput, TOPIC_MAIN, nil)
 	if err != nil {
 		panic(err)
 		sigChan <- syscall.SIGINT
@@ -71,7 +71,7 @@ func main() {
 	// set up channels
 	outgoingToNSQChan := make(chan *server.BotResponse)
 
-	outputWriter := nsq.NewWriter(outputWriterAddress)
+	outputProducer := nsq.NewProducer(outputProducerAddress, nil)
 
 	// set up heartbeat ticker
 	heartbeatTicker := time.NewTicker(1 * time.Second)
@@ -80,27 +80,27 @@ func main() {
 	botApp := &BotApp{Config: config, OutgoingChan: outgoingToNSQChan, UniqueID: newUUID}
 	botApp.initServices()
 
-	incomingFromIRC.AddHandler(botApp)
-	incomingFromIRC.ConnectToLookupd(lookupdAddress)
+	incomingFromIRC.SetHandler(botApp)
+	incomingFromIRC.ConnectToNSQLookupd(lookupdAddress)
 
-	go HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
+	go HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputProducer, newUUID)
 
 	log.Printf("Done starting up. UUID:[%s]. Waiting on quit signal.", newUUID.String())
 	<-sigChan
 }
 
-func HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
+func HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputProducer *nsq.Producer, serverID uuid.UUID) {
 
 	for {
 		select {
 		case msg := <-outgoingToNSQChan:
 			val, _ := json.Marshal(msg)
-			outputWriter.Publish("bot3server-output", val)
+			outputProducer.Publish("bot3server-output", val)
 			break
 		case t := <-heartbeatTicker:
 			hb := &server.Bot3ServerHeartbeat{ServerID: serverID.String(), Timestamp: t}
 			val, _ := json.Marshal(hb)
-			outputWriter.Publish("bot3server-heartbeat", val)
+			outputProducer.Publish("bot3server-heartbeat", val)
 			break
 		}
 	}
