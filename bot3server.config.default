@@ -1,0 +1,14 @@
+[default]
+bot3server-input=bot3server-input
+bot3server-output=bot3server-output
+
+[plugins]
+enabled = fight cah slap inconceivable help remindme nextwedding weather forecast zed boulderingtime dice catfacts
+
+[nsq]
+output-writer-address=localhost:4150
+lookupd-address=localhost:4161
+
+[weather]
+wundergroundapiurl = http://api.wunderground.com/api/
+wundergroundapikey = <sample key here>

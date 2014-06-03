@@ -3,12 +3,13 @@ package cah
 import (
 	// "errors"
 	"encoding/json"
-	//"fmt"
+	// "fmt"
 	"github.com/gamelost/bot3server/server"
 	"io/ioutil"
-	// "log"
+	"log"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -151,15 +152,27 @@ func (svc *CahService) RandomCahMessage() string {
 	return svc.MessageFromQuestionAndAnswers(qCard.Text, answers)
 }
 
+func (svc *CahService) RandomCahAnswerMessage(s string) string {
+	card := svc.RandomAnswerCard()
+	return convertToInlineAnswer(card.Text)
+}
+
 func (svc *CahService) RandomCahMessageWithArgument(argStr string) string {
 
-	qCard := svc.RandomOneAnswerQuestionCard()
+	log.Printf("We got %s", argStr)
+	if strings.Contains(argStr, "__") {
+		re, _ := regexp.Compile("__+")
+		ret := re.ReplaceAllStringFunc(argStr, svc.RandomCahAnswerMessage)
+		return ret
+	} else {
+		qCard := svc.RandomOneAnswerQuestionCard()
 
-	// queue up all needed answer cards
-	var answers = make([]string, 1)
-	answers[0] = argStr
+		// queue up all needed answer cards
+		var answers = make([]string, 1)
+		answers[0] = argStr
 
-	return svc.MessageFromQuestionAndAnswers(qCard.Text, answers)
+		return svc.MessageFromQuestionAndAnswers(qCard.Text, answers)
+	}
 }
 
 func (ccc CahCardCollection) CardCount() int {
