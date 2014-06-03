@@ -23,7 +23,7 @@ import (
 	//"github.com/gamelost/bot3server/module/howlongbeforeicanquityouintel"
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
-	nsq "github.com/bitly/go-nsq"
+	nsq "github.com/gamelost/go-nsq"
 	"github.com/twinj/uuid"
 	"log"
 	"os"
