@@ -30,10 +30,12 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"strings"
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
 const CONFIG_CAT_DEFAULT = "default"
+const CONFIG_CAT_PLUGINS = "plugins"
 
 // nsq specific constants
 const CONFIG_CAT_NSQ = "nsq"
@@ -42,6 +44,8 @@ const CONFIG_BOT3SERVER_OUTPUT = "bot3server-output"
 const CONFIG_OUTPUT_WRITER_ADDR = "output-writer-address"
 const CONFIG_LOOKUPD_ADDR = "lookupd-address"
 const TOPIC_MAIN = "main"
+
+var conf *iniconf.ConfigFile
 
 func main() {
 
@@ -56,6 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
+	conf = config
 
 	bot3serverInput, _ := config.GetString(CONFIG_CAT_DEFAULT, CONFIG_BOT3SERVER_INPUT)
 	outputWriterAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
@@ -114,6 +119,17 @@ type BotApp struct {
 }
 
 func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
+	log.Printf("Add Handler for %s.", key)
+	plugins, err := conf.GetString(CONFIG_CAT_PLUGINS, "enabled")
+	log.Printf("err: %r", err)
+	// If plugins string does not exist, assume that all plugins
+	// are enabled.
+	if err == nil {
+	  log.Printf("Plugins enabled: %s", plugins)
+	  if !strings.Contains(" " + plugins + " ", " " + key + " ") {
+		return
+	  }
+	}
 	ba.Handlers[key] = h
 }
 
@@ -126,8 +142,8 @@ func (ba *BotApp) initServices() error {
 	ba.Handlers = make(map[string]server.BotHandler)
 
 	// implement all services
-	ba.AddHandler("fight", (new(fight.FightService)).NewService())
-	ba.AddHandler("cah", (new(cah.CahService)).NewService())
+        ba.AddHandler("fight", (new(fight.FightService)).NewService())
+        ba.AddHandler("cah", (new(cah.CahService)).NewService())
 	ba.AddHandler("slap", (new(slap.SlapService)).NewService())
 	ba.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService())
 	ba.AddHandler("help", (new(help.HelpService)).NewService())
