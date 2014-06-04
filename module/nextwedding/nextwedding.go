@@ -21,7 +21,7 @@ func durationToWeddingDate() string {
 
 	nowDate := time.Now()
 	loc, _ := time.LoadLocation("America/Los_Angeles")
-	weddingDate := time.Date(2014, time.September, 6, 16, 0, 0, 0, loc)
+	weddingDate := time.Date(2014, time.September, 20, 16, 0, 0, 0, loc)
 
 	if nowDate.After(weddingDate) {
 		return "Ah mon. It be too late, the deed is done!"
