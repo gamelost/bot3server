@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gamelost/bot3server/module/fight"
+	"github.com/gamelost/bot3server/module/mongo"
 	// "github.com/gamelost/bot3server/module/logger"
 	"github.com/gamelost/bot3server/server"
 	//"github.com/gamelost/bot3server/module/helloworld"
@@ -141,6 +142,7 @@ func (ba *BotApp) initServices() error {
 	// implement all services
 	ba.AddHandler("fight", (new(fight.FightService)).NewService())
 	ba.AddHandler("cah", (new(cah.CahService)).NewService())
+	ba.AddHandler("mongo", (new(mongo.MongoService)).NewService())
 	ba.AddHandler("slap", (new(slap.SlapService)).NewService())
 	ba.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService())
 	ba.AddHandler("help", (new(help.HelpService)).NewService())
