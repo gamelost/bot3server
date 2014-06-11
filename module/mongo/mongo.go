@@ -63,7 +63,7 @@ func (svc *MongoService) Handle(botRequest *server.BotRequest, botResponse *serv
 		return
 	}
 
-	cmd := botRequest.RawLine.Text()
+	cmd := botRequest.Text()
 
 	cmd = strings.TrimPrefix(cmd, "!mongo")
 	cmd = strings.Trim(cmd, " ")

@@ -2,7 +2,7 @@ package bot3api
 
 import (
 	"github.com/gamelost/bot3server/server"
-	irc "github.com/gamelost/goirc/client"
+	// irc "github.com/gamelost/goirc/client"
 	"log"
 	"net/rpc"
 	"testing"
@@ -21,9 +21,9 @@ func BenchmarkRPC(b *testing.B) {
 	// close client before function exit
 	defer client.Close()
 
-	line := &irc.Line{}
+	// line := &irc.Line{}
 
-	botRequest := &server.BotRequest{RawLine: line}
+	botRequest := &server.BotRequest{Identifier: "hello", Text: ""}
 	botResponse := &server.BotResponse{}
 
 	err = client.Call("BotService.Handle", botRequest, &botResponse)

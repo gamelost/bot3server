@@ -1,6 +1,7 @@
 [default]
 bot3server-input=bot3server-input
 bot3server-output=bot3server-output
+magic-identifier=shoowopadoowop
 
 [plugins]
 enabled = fight cah slap inconceivable help remindme nextwedding weather forecast zed boulderingtime dice catfacts

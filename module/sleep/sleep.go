@@ -9,5 +9,5 @@ import (
 func Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	time.Sleep(10 * time.Second)
-	botResponse.SetSingleLineResponse(fmt.Sprintf("Slept for ten seconds. Feeling refreshed %s!!", botRequest.RawLine.Nick))
+	botResponse.SetSingleLineResponse(fmt.Sprintf("Slept for ten seconds. Feeling refreshed %s!!", botRequest.Nick))
 }
