@@ -62,7 +62,7 @@ func (svc *CahService) NewService() server.BotHandler {
 
 func (svc *CahService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
-	strInput := parseInput(botRequest.RawLine.Text())
+	strInput := parseInput(botRequest.Text())
 	if len(strInput) > 0 {
 		botResponse.SetSingleLineResponse(svc.RandomCahMessageWithArgument(strInput))
 	} else {

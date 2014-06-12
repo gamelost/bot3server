@@ -26,7 +26,7 @@ func (svc *FightService) NewService() server.BotHandler {
 
 func (svc *FightService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
-	fighterOne, fighterTwo, err := svc.ParseInput(botRequest.RawLine.Text())
+	fighterOne, fighterTwo, err := svc.ParseInput(botRequest.Text())
 
 	if err != nil {
 		botResponse.SetSingleLineResponse("Unable to parse fight command.  Please use 'vs' or 'vs.'")

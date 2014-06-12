@@ -28,8 +28,8 @@ func (svc *DiceService) NewService() server.BotHandler {
 func (svc *DiceService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	log.Println("Received Handle for !dice")
-	result := svc.RollDice(parseInput(botRequest.RawLine.Text()))
-	strResp := fmt.Sprintf("%s: your roll:[%s] result:[%s], description:[%s]", botRequest.RawLine.Nick, result.Input, result.Output, result.Description)
+	result := svc.RollDice(parseInput(botRequest.Text()))
+	strResp := fmt.Sprintf("%s: your roll:[%s] result:[%s], description:[%s]", botRequest.Nick, result.Input, result.Output, result.Description)
 	botResponse.SetSingleLineResponse(strResp)
 }
 

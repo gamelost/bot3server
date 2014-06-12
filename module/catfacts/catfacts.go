@@ -24,7 +24,7 @@ func (svc *CatFactsService) NewService() server.BotHandler {
 }
 
 func (svc *CatFactsService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
-	what := botRequest.RawLine.Text()
+	what := botRequest.Text()
 	number := getBoundedIntegerFromInput(what, 1, 10)
 	result := svc.CatFactsApi(number)
 	botResponse.SetMultipleLineResponse(result.Facts)

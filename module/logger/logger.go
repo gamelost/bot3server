@@ -28,7 +28,7 @@ func init() {
 
 func Log(request *server.BotRequest) {
 
-	err := rdb.Table("log").Insert(request.RawLine).Run(session).Exec()
+	err := rdb.Table("log").Insert(request).Run(session).Exec()
 	if err != nil {
 		log.Fatal("error occured", err)
 	}

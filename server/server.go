@@ -3,7 +3,7 @@ package server
 import (
 	iniconf "code.google.com/p/goconf/conf"
 	"fmt"
-	irc "github.com/gamelost/goirc/client"
+	// irc "github.com/gamelost/goirc/client"
 	"strings"
 	"time"
 )
@@ -23,10 +23,18 @@ const (
 
 type BotRequest struct {
 	// raw data struct (from the bot3)
-	RawLine *irc.Line
+	Identifier string
+	Nick       string
+	Channel    string
+	ChatText   string
+}
+
+func (req *BotRequest) Text() string {
+	return req.ChatText
 }
 
 type BotResponse struct {
+	Identifier   string
 	ResponseType string
 	Target       string
 	Response     []string
@@ -64,21 +72,21 @@ func (response *BotResponse) SetMultipleLineResponse(rstr []string) {
 
 func (request *BotRequest) RequestIsCommand() bool {
 
-	return stringIsCommand(request.RawLine.Text())
+	return stringIsCommand(request.Text())
 }
 
 func (request *BotRequest) Command() string {
 
-	return getCommandFromString(request.RawLine.Text())
+	return getCommandFromString(request.Text())
 }
 
 func (request *BotRequest) LineTextWithoutCommand() string {
 
 	if request.RequestIsCommand() {
-		lineTxt := strings.TrimPrefix(request.RawLine.Text(), fmt.Sprintf("!%s", request.Command()))
+		lineTxt := strings.TrimPrefix(request.Text(), fmt.Sprintf("!%s", request.Command()))
 		return strings.TrimSpace(lineTxt)
 	} else {
-		return request.RawLine.Text()
+		return request.Text()
 	}
 }
 

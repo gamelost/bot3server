@@ -13,6 +13,6 @@ func (svc *InconceivableService) NewService() server.BotHandler {
 
 func (svc *InconceivableService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
-	botResponse.SetSingleLineResponse(fmt.Sprintf("I do not think this word means what you think it means, %s!", botRequest.RawLine.Nick))
+	botResponse.SetSingleLineResponse(fmt.Sprintf("I do not think this word means what you think it means, %s!", botRequest.Nick))
 	botResponse.ResponseType = "ACTION"
 }

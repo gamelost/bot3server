@@ -174,7 +174,7 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 	// mabye a good idea to automatically-disable the module if it panics too frequently
 
 	// throwout malformed requests
-	if botRequest.RawLine == nil {
+	if len(botRequest.ChatText) < 1 {
 		return nil
 	}
 
@@ -184,7 +184,7 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 		if x := recover(); x != nil {
 			log.Printf("Trapped panic. Rawline is:[%s]: %v\n", rawline, x)
 		}
-	}(botRequest.RawLine.Text())
+	}(botRequest.Text())
 
 	// log all lines
 	// logger.Log(botRequest)
@@ -198,7 +198,7 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 
 		if handler != nil {
 			//log.Printf("Assigning handler for: %s\n", command)
-			botResponse := &server.BotResponse{Target: botRequest.RawLine.Target()}
+			botResponse := &server.BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
 			handler.Handle(botRequest, botResponse)
 			ba.OutgoingChan <- botResponse
 		}
