@@ -7,40 +7,75 @@ import (
 	"time"
 )
 
-type RemindMeService struct{}
+// set a max duration
+const MAXDURATION = time.Hour * 24 * 7
+
+// set a min duration
+const MINDURATION = time.Second * 2
+
+type Reminder struct {
+	Duration time.Duration
+	NotifyAt time.Time
+	Message  string
+}
+
+type RemindMeService struct {
+	Reminders map[string]*Reminder
+}
 
 func (svc *RemindMeService) NewService() server.BotHandler {
+
 	return &RemindMeService{}
 }
 
 func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
 
 	arg := botRequest.LineTextWithoutCommand()
-	resp, dur, err := HandleCommand(arg)
+	rem, err := HandleCommand(arg)
 
 	if err != nil {
-		botResponse.SetSingleLineResponse("Could not understand your request. Should be in [duration] [message] format.")
+		botResponse.SetSingleLineResponse(fmt.Sprintf("Could not understand your request. %s", err.Error()))
 	} else {
 
-		if dur < 0 {
+		// nil reminder triggers status update instead
+		if rem == nil {
+			botResponse.SetSingleLineResponse(fmt.Sprintf("<placeholder for reminder summary>"))
+			return
+		} else if rem.Duration < 0 {
 			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, only your mom would ask you to do something in the past. You're lame.", botRequest.Nick))
+		} else if rem.Duration < MINDURATION {
+			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, I dont work that fast!", botRequest.Nick))
+		} else if rem.Duration > MAXDURATION {
+			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, really? Maybe you should use a calendar instead.  Durations less than a week please.", botRequest.Nick))
 		} else {
-			time.Sleep(dur)
-			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.Nick, resp))
+			time.Sleep(rem.Duration)
+			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.Nick, rem.Message))
 		}
 	}
 }
 
-func HandleCommand(cmd string) (response string, dur time.Duration, err error) {
+func ReminderStructFromCommand(cmd string) (reminder *Reminder, err error) {
 
+	r := &Reminder{}
+	// see if cmd is empty
 	cmd = strings.TrimSpace(cmd)
-	args := strings.SplitAfterN(cmd, " ", 2)
-
-	dur, err = time.ParseDuration(strings.TrimSpace(args[0]))
-	if err != nil {
-		return
+	if cmd == "" {
+		return nil, nil
 	} else {
-		response = strings.TrimSpace(args[1])
-		return
+		args := strings.SplitAfterN(cmd, " ", 2)
+		r.Duration, err = time.ParseDuration(strings.TrimSpace(args[0]))
+		if err != nil {
+			return nil, err
+		} else {
+			r.Message = strings.TrimSpace(args[1])
+			return r, nil
+		}
 	}
+
+}
+
+func HandleCommand(cmd string) (rem *Reminder, err error) {
+
+	reminder, err := ReminderStructFromCommand(cmd)
+	return reminder, err
 }
