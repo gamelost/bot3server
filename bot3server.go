@@ -89,27 +89,10 @@ func main() {
 	incomingFromIRC.AddHandler(botApp)
 	incomingFromIRC.ConnectToLookupd(lookupdAddress)
 
-	go HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
+	go botApp.HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
 
 	log.Printf("Done starting up. UUID:[%s]. Waiting on quit signal.", newUUID.String())
 	<-sigChan
-}
-
-func HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
-
-	for {
-		select {
-		case msg := <-outgoingToNSQChan:
-			val, _ := json.Marshal(msg)
-			outputWriter.Publish("bot3server-output", val)
-			break
-		case t := <-heartbeatTicker:
-			hb := &server.Bot3ServerHeartbeat{ServerID: serverID.String(), Timestamp: t}
-			val, _ := json.Marshal(hb)
-			outputWriter.Publish("bot3server-heartbeat", val)
-			break
-		}
-	}
 }
 
 type BotApp struct {
@@ -164,6 +147,23 @@ func (ba *BotApp) HandleMessage(message *nsq.Message) error {
 	json.Unmarshal(message.Body, req)
 	go ba.HandleIncoming(req)
 	return nil
+}
+
+func (ba *BotApp) HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
+
+	for {
+		select {
+		case msg := <-outgoingToNSQChan:
+			val, _ := json.Marshal(msg)
+			outputWriter.Publish("bot3server-output", val)
+			break
+		case t := <-heartbeatTicker:
+			hb := &server.Bot3ServerHeartbeat{ServerID: serverID.String(), Timestamp: t}
+			val, _ := json.Marshal(hb)
+			outputWriter.Publish("bot3server-heartbeat", val)
+			break
+		}
+	}
 }
 
 func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
