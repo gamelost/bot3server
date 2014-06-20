@@ -1,10 +1,12 @@
 package remindme
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // set a max duration
@@ -12,6 +14,9 @@ const MAXDURATION = time.Hour * 24 * 7
 
 // set a min duration
 const MINDURATION = time.Second * 2
+
+// string messages
+const INSUFFICENT_ARGS = "Insufficent number of arguments provided.  Need to provide a duration and message."
 
 type Reminder struct {
 	Duration time.Duration
@@ -34,7 +39,7 @@ func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *s
 	rem, err := HandleCommand(arg)
 
 	if err != nil {
-		botResponse.SetSingleLineResponse(fmt.Sprintf("Could not understand your request. %s", err.Error()))
+		botResponse.SetSingleLineResponse(fmt.Sprintf("Bloop. Your request could not be parsed: %s", err.Error()))
 	} else {
 
 		// nil reminder triggers status update instead
@@ -62,16 +67,30 @@ func ReminderStructFromCommand(cmd string) (reminder *Reminder, err error) {
 	if cmd == "" {
 		return nil, nil
 	} else {
+
 		args := strings.SplitAfterN(cmd, " ", 2)
-		r.Duration, err = time.ParseDuration(strings.TrimSpace(args[0]))
-		if err != nil {
-			return nil, err
+
+		if len(args) == 1 {
+			return nil, errors.New(INSUFFICENT_ARGS)
 		} else {
-			r.Message = strings.TrimSpace(args[1])
-			return r, nil
+			durationStr := strings.TrimSpace(args[0])
+			reminderStr := strings.TrimSpace(args[1])
+
+			// see if durationStr starts with any value except a digit
+			firstChar := rune(durationStr[0])
+			if (firstChar == '.') || unicode.IsDigit(firstChar) {
+				r.Duration, err = time.ParseDuration(durationStr)
+				if err != nil {
+					return nil, err
+				} else {
+					r.Message = reminderStr
+					return r, nil
+				}
+			} else {
+				return nil, errors.New(fmt.Sprintf("Invalid duration value:[%s] supplied for argument.  Ignoring.", durationStr))
+			}
 		}
 	}
-
 }
 
 func HandleCommand(cmd string) (rem *Reminder, err error) {
