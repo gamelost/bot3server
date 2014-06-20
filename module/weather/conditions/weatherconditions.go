@@ -1,6 +1,7 @@
 package conditions
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"errors"
 	"fmt"
 	"github.com/gamelost/bot3server/module/weather"
@@ -12,6 +13,7 @@ import (
 )
 
 type WeatherConditionsService struct {
+	server.BotHandlerService
 	WUAPIKey string
 	WUAPIURL string
 }
@@ -23,14 +25,18 @@ var stateCityAPICallUrl string
 var cityAPICallUrl string
 var airportAPICallUrl string
 
-func (svc *WeatherConditionsService) NewService() server.BotHandler {
-	apiurl, _ := server.ServerConfig.GetString("weather", "wundergroundapiurl")
-	apikey, _ := server.ServerConfig.GetString("weather", "wundergroundapikey")
+func (svc *WeatherConditionsService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+
+	newSvc := &WeatherConditionsService{}
+	newSvc.Config = config
+
+	apiurl, _ := newSvc.Config.GetString("weather", "wundergroundapiurl")
+	apikey, _ := newSvc.Config.GetString("weather", "wundergroundapikey")
 	apipath := apiurl + apikey
 	stateCityAPICallUrl = apipath + "/conditions/q/%s/%s.json"
 	cityAPICallUrl = apipath + "/conditions/q/%s.json"
 	airportAPICallUrl = apipath + "/conditions/q/%s.json"
-	return &WeatherConditionsService{}
+	return newSvc
 }
 
 func init() {

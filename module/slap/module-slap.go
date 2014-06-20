@@ -1,16 +1,20 @@
 package slap
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
 	"strings"
 )
 
 type SlapService struct {
+	server.BotHandlerService
 }
 
-func (svc *SlapService) NewService() server.BotHandler {
-	return &SlapService{}
+func (svc *SlapService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+	newSvc := &SlapService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *SlapService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

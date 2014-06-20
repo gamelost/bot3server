@@ -1,6 +1,7 @@
 package forecast
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"errors"
 	"fmt"
 	"github.com/gamelost/bot3server/module/weather"
@@ -10,20 +11,26 @@ import (
 	"strings"
 )
 
-type WeatherForecastService struct{}
+type WeatherForecastService struct {
+	server.BotHandlerService
+}
 
 var stateCityAPICallUrl string
 var cityAPICallUrl string
 var airportAPICallUrl string
 
-func (svc *WeatherForecastService) NewService() server.BotHandler {
-	apiurl, _ := server.ServerConfig.GetString("weather", "wundergroundapiurl")
-	apikey, _ := server.ServerConfig.GetString("weather", "wundergroundapikey")
+func (svc *WeatherForecastService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+
+	newSvc := &WeatherForecastService{}
+	newSvc.Config = config
+
+	apiurl, _ := newSvc.Config.GetString("weather", "wundergroundapiurl")
+	apikey, _ := newSvc.Config.GetString("weather", "wundergroundapikey")
 	apipath := apiurl + apikey
 	stateCityAPICallUrl = apipath + "/forecast/q/%s/%s.json"
 	cityAPICallUrl = apipath + "/forecast/q/%s.json"
 	airportAPICallUrl = apipath + "/forecast/q/%s.json"
-	return &WeatherForecastService{}
+	return newSvc
 }
 
 func (svc *WeatherForecastService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

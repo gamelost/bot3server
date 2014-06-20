@@ -1,6 +1,7 @@
 package remindme
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"errors"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
@@ -25,12 +26,15 @@ type Reminder struct {
 }
 
 type RemindMeService struct {
+	server.BotHandlerService
 	Reminders map[string]*Reminder
 }
 
-func (svc *RemindMeService) NewService() server.BotHandler {
+func (svc *RemindMeService) NewService(config *iniconf.ConfigFile) server.BotHandler {
 
-	return &RemindMeService{}
+	newSvc := &RemindMeService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

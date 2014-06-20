@@ -4,6 +4,7 @@ import (
 	// "errors"
 	"encoding/json"
 	// "fmt"
+	iniconf "code.google.com/p/goconf/conf"
 	"github.com/gamelost/bot3server/server"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,7 @@ import (
 const CAH_SOURCE_URL = "https://raw.githubusercontent.com/gamelost/bot3server/master/module/cah/cah-cards-standard.json"
 
 type CahService struct {
+	server.BotHandlerService
 	RandomNG          *rand.Rand
 	CahCardCollection *CahCardCollection
 }
@@ -38,9 +40,10 @@ type CahCardCollection []struct {
 	Text       string `json:"text"`
 }
 
-func (svc *CahService) NewService() server.BotHandler {
+func (svc *CahService) NewService(config *iniconf.ConfigFile) server.BotHandler {
 
 	var newSvc = &CahService{}
+	newSvc.Config = config
 
 	newSvc.CahCardCollection = &CahCardCollection{}
 

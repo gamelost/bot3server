@@ -1,6 +1,7 @@
 package dice
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
@@ -12,6 +13,7 @@ import (
 )
 
 type DiceService struct {
+	server.BotHandlerService
 }
 
 type DiceResult struct {
@@ -21,8 +23,10 @@ type DiceResult struct {
 	Description string `json:"description"`
 }
 
-func (svc *DiceService) NewService() server.BotHandler {
-	return &DiceService{}
+func (svc *DiceService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+	newSvc := &DiceService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *DiceService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

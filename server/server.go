@@ -1,18 +1,20 @@
 package server
 
 import (
-	iniconf "code.google.com/p/goconf/conf"
 	"fmt"
 	// irc "github.com/gamelost/goirc/client"
+	iniconf "code.google.com/p/goconf/conf"
 	"strings"
 	"time"
 )
 
-var ServerConfig *iniconf.ConfigFile
-
 type BotHandler interface {
-	NewService() BotHandler
+	NewService(config *iniconf.ConfigFile) BotHandler
 	Handle(botRequest *BotRequest, botResponse *BotResponse)
+}
+
+type BotHandlerService struct {
+	Config *iniconf.ConfigFile
 }
 
 const (

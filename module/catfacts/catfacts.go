@@ -1,13 +1,14 @@
 package catfacts
 
 import (
-	"github.com/gamelost/bot3server/server"
+	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
+	"fmt"
+	"github.com/gamelost/bot3server/server"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"regexp"
-	"fmt"
+	"strconv"
 )
 
 type CatFactsResult struct {
@@ -17,10 +18,14 @@ type CatFactsResult struct {
 
 const baseUri = "http://catfacts-api.appspot.com/api/facts?number="
 
-type CatFactsService struct{}
+type CatFactsService struct {
+	server.BotHandlerService
+}
 
-func (svc *CatFactsService) NewService() server.BotHandler {
-	return &CatFactsService{}
+func (svc *CatFactsService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+	newSvc := &CatFactsService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *CatFactsService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

@@ -13,23 +13,27 @@ import (
 	"strings"
 	// "time"
 	// "unicode"
-        "labix.org/v2/mgo"
-        // "labix.org/v2/mgo/bson"
+	"labix.org/v2/mgo"
+	// "labix.org/v2/mgo/bson"
+	iniconf "code.google.com/p/goconf/conf"
 	"launchpad.net/goyaml"
 )
 
 type MongoService struct {
-	ok bool
+	server.BotHandlerService
+	ok      bool
 	session *mgo.Session
-	db *mgo.Database
+	db      *mgo.Database
 }
 
-func (svc *MongoService) NewService() server.BotHandler {
+func (svc *MongoService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+
 	var newSvc = &MongoService{}
+	newSvc.BotHandlerService.Config = config
 
 	newSvc.ok = false
 
-	servers, err := server.ServerConfig.GetString("mongo", "servers")
+	servers, err := newSvc.Config.GetString("mongo", "servers")
 
 	if err != nil {
 		log.Printf("Mongo: No server configured. Disabling")
@@ -43,7 +47,7 @@ func (svc *MongoService) NewService() server.BotHandler {
 		return newSvc
 	}
 
-	db, err := server.ServerConfig.GetString("mongo", "db")
+	db, err := newSvc.Config.GetString("mongo", "db")
 
 	if err != nil {
 		log.Printf("Mongo: No database configured, disabling.")
@@ -121,9 +125,9 @@ func (svc *MongoService) doFind(collection string, arg *map[string]interface{}) 
 		return "Empty Resultset"
 	} else {
 		count, _ := results.Count()
-		if (count > 1) {
+		if count > 1 {
 			return fmt.Sprintf("There were %d results for your find.", count)
-		} else if (count < 0) {
+		} else if count < 0 {
 			return "No results."
 		} else {
 			var res interface{}

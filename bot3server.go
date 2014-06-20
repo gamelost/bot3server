@@ -4,26 +4,23 @@ import (
 	"github.com/gamelost/bot3server/module/fight"
 	"github.com/gamelost/bot3server/module/mongo"
 	// "github.com/gamelost/bot3server/module/logger"
-	"github.com/gamelost/bot3server/server"
-	//"github.com/gamelost/bot3server/module/helloworld"
 	"github.com/gamelost/bot3server/module/help"
 	"github.com/gamelost/bot3server/module/inconceivable"
 	"github.com/gamelost/bot3server/module/slap"
+	"github.com/gamelost/bot3server/server"
 	//"github.com/gamelost/bot3server/module/sleep"
 	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/nextwedding"
 	// "github.com/gamelost/bot3server/module/panic"
-	"github.com/gamelost/bot3server/module/dice"
-	"github.com/gamelost/bot3server/module/remindme"
-	"github.com/gamelost/bot3server/module/zed"
-	//"github.com/gamelost/bot3server/module/testcommands"
-	"github.com/gamelost/bot3server/module/boulderingtime"
-	"github.com/gamelost/bot3server/module/catfacts"
-	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
-	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
-	//"github.com/gamelost/bot3server/module/howlongbeforeicanquityouintel"
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
+	"github.com/gamelost/bot3server/module/boulderingtime"
+	"github.com/gamelost/bot3server/module/catfacts"
+	"github.com/gamelost/bot3server/module/dice"
+	"github.com/gamelost/bot3server/module/remindme"
+	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
+	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
+	"github.com/gamelost/bot3server/module/zed"
 	nsq "github.com/gamelost/go-nsq"
 	"github.com/twinj/uuid"
 	"log"
@@ -50,9 +47,6 @@ var conf *iniconf.ConfigFile
 
 func main() {
 
-	// create unique UUID on startup
-	newUUID := uuid.NewV1()
-
 	// the quit channel
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -61,7 +55,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to read configuration file. Exiting now.")
 	}
-	server.ServerConfig = config
 
 	bot3serverInput, _ := config.GetString(CONFIG_CAT_DEFAULT, CONFIG_BOT3SERVER_INPUT)
 	outputWriterAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_OUTPUT_WRITER_ADDR)
@@ -83,27 +76,38 @@ func main() {
 	heartbeatTicker := time.NewTicker(1 * time.Second)
 
 	// initialize the handlers
-	botApp := &BotApp{Config: config, OutgoingChan: outgoingToNSQChan, UniqueID: newUUID}
-	botApp.initServices()
+	bot3server := &Bot3Server{Config: config, OutgoingChan: outgoingToNSQChan}
+	bot3server.Initialize()
 
-	incomingFromIRC.AddHandler(botApp)
+	incomingFromIRC.AddHandler(bot3server)
 	incomingFromIRC.ConnectToLookupd(lookupdAddress)
 
-	go botApp.HandleOutgoingToNSQ(outgoingToNSQChan, heartbeatTicker.C, outputWriter, newUUID)
+	go bot3server.HandleOutgoing(outgoingToNSQChan, heartbeatTicker.C, outputWriter, bot3server.UniqueID)
 
-	log.Printf("Done starting up. UUID:[%s]. Waiting on quit signal.", newUUID.String())
+	log.Printf("Done starting up. UUID:[%s]. Waiting on quit signal.", bot3server.UniqueID.String)
 	<-sigChan
 }
 
-type BotApp struct {
+type Bot3Server struct {
+	Initialized  bool
 	Config       *iniconf.ConfigFile
 	Handlers     map[string]server.BotHandler
 	OutgoingChan chan *server.BotResponse
 	UniqueID     uuid.UUID
 }
 
-func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
-	plugins, err := server.ServerConfig.GetString(CONFIG_CAT_PLUGINS, "enabled")
+func (bs *Bot3Server) Initialize() {
+	// run only once
+	if !bs.Initialized {
+
+		bs.UniqueID = uuid.NewV1()
+		bs.initServices()
+		bs.Initialized = true
+	}
+}
+
+func (bs *Bot3Server) AddHandler(key string, h server.BotHandler) {
+	plugins, err := bs.Config.GetString(CONFIG_CAT_PLUGINS, "enabled")
 	// If plugins string does not exist, assume that all plugins
 	// are enabled.
 	if err == nil {
@@ -111,45 +115,45 @@ func (ba *BotApp) AddHandler(key string, h server.BotHandler) {
 			return
 		}
 	}
-	ba.Handlers[key] = h
+	bs.Handlers[key] = h
 }
 
-func (ba *BotApp) GetHandler(key string) server.BotHandler {
-	return ba.Handlers[key]
+func (bs *Bot3Server) GetHandler(key string) server.BotHandler {
+	return bs.Handlers[key]
 }
 
-func (ba *BotApp) initServices() error {
+func (bs *Bot3Server) initServices() error {
 
-	ba.Handlers = make(map[string]server.BotHandler)
+	bs.Handlers = make(map[string]server.BotHandler)
 
 	// implement all services
-	ba.AddHandler("fight", (new(fight.FightService)).NewService())
-	ba.AddHandler("cah", (new(cah.CahService)).NewService())
-	ba.AddHandler("mongo", (new(mongo.MongoService)).NewService())
-	ba.AddHandler("slap", (new(slap.SlapService)).NewService())
-	ba.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService())
-	ba.AddHandler("help", (new(help.HelpService)).NewService())
-	ba.AddHandler("remindme", (new(remindme.RemindMeService)).NewService())
-	ba.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService())
-	ba.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService())
-	ba.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService())
-	ba.AddHandler("zed", (new(zed.ZedsDeadService)).NewService())
-	ba.AddHandler("boulderingtime", (new(boulderingtime.BoulderingTimeService)).NewService())
-	ba.AddHandler("dice", (new(dice.DiceService)).NewService())
-	ba.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService())
+	bs.AddHandler("fight", (new(fight.FightService)).NewService(bs.Config))
+	bs.AddHandler("cah", (new(cah.CahService)).NewService(bs.Config))
+	bs.AddHandler("mongo", (new(mongo.MongoService)).NewService(bs.Config))
+	bs.AddHandler("slap", (new(slap.SlapService)).NewService(bs.Config))
+	bs.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService(bs.Config))
+	bs.AddHandler("help", (new(help.HelpService)).NewService(bs.Config))
+	bs.AddHandler("remindme", (new(remindme.RemindMeService)).NewService(bs.Config))
+	bs.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService(bs.Config))
+	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config))
+	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config))
+	bs.AddHandler("zed", (new(zed.ZedsDeadService)).NewService(bs.Config))
+	bs.AddHandler("boulderingtime", (new(boulderingtime.BoulderingTimeService)).NewService(bs.Config))
+	bs.AddHandler("dice", (new(dice.DiceService)).NewService(bs.Config))
+	bs.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService(bs.Config))
 	return nil
 }
 
-func (ba *BotApp) HandleMessage(message *nsq.Message) error {
+func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
 
-	//	ba.IncomingChan <- message
+	//	bs.IncomingChan <- message
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
-	go ba.HandleIncoming(req)
+	go bs.HandleIncoming(req)
 	return nil
 }
 
-func (ba *BotApp) HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
+func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
 
 	for {
 		select {
@@ -166,7 +170,7 @@ func (ba *BotApp) HandleOutgoingToNSQ(outgoingToNSQChan chan *server.BotResponse
 	}
 }
 
-func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
+func (bs *Bot3Server) HandleIncoming(botRequest *server.BotRequest) error {
 
 	// since we dont want the entire botapi to crash if a module throws an error or panic
 	// we'll trap it here and log/notify the owner.
@@ -186,21 +190,18 @@ func (ba *BotApp) HandleIncoming(botRequest *server.BotRequest) error {
 		}
 	}(botRequest.Text())
 
-	// log all lines
-	// logger.Log(botRequest)
-
 	// check if command before processing
 	if botRequest.RequestIsCommand() {
 
 		command := botRequest.Command()
 
-		handler := ba.GetHandler(command)
+		handler := bs.GetHandler(command)
 
 		if handler != nil {
 			//log.Printf("Assigning handler for: %s\n", command)
 			botResponse := &server.BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
 			handler.Handle(botRequest, botResponse)
-			ba.OutgoingChan <- botResponse
+			bs.OutgoingChan <- botResponse
 		}
 	}
 

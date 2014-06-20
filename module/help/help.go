@@ -2,13 +2,19 @@ package help
 
 import (
 	//	"fmt"
+	iniconf "code.google.com/p/goconf/conf"
 	"github.com/gamelost/bot3server/server"
 )
 
-type HelpService struct{}
+type HelpService struct {
+	server.BotHandlerService
+}
 
-func (svc *HelpService) NewService() server.BotHandler {
-	return &HelpService{}
+func (svc *HelpService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+
+	var newSvc = &HelpService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *HelpService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {

@@ -1,15 +1,20 @@
 package nextwedding
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
 	"time"
 )
 
-type NextWeddingService struct{}
+type NextWeddingService struct {
+	server.BotHandlerService
+}
 
-func (svc *NextWeddingService) NewService() server.BotHandler {
-	return &NextWeddingService{}
+func (svc *NextWeddingService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+	newSvc := &NextWeddingService{}
+	newSvc.Config = config
+	return newSvc
 }
 
 func (svc *NextWeddingService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
