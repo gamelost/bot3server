@@ -14,6 +14,7 @@ import (
 	// "github.com/gamelost/bot3server/module/panic"
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
+	nsq "github.com/bitly/go-nsq"
 	"github.com/gamelost/bot3server/module/boulderingtime"
 	"github.com/gamelost/bot3server/module/catfacts"
 	"github.com/gamelost/bot3server/module/dice"
@@ -21,7 +22,6 @@ import (
 	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
 	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
 	"github.com/gamelost/bot3server/module/zed"
-	nsq "github.com/gamelost/go-nsq"
 	"github.com/twinj/uuid"
 	"log"
 	"os"
@@ -61,7 +61,7 @@ func main() {
 	lookupdAddress, _ := config.GetString(CONFIG_CAT_NSQ, CONFIG_LOOKUPD_ADDR)
 
 	// set up listener instance
-	incomingFromIRC, err := nsq.NewReader(bot3serverInput, TOPIC_MAIN)
+	incomingFromIRC, err := nsq.NewConsumer(bot3serverInput, TOPIC_MAIN, nsq.NewConfig())
 	if err != nil {
 		panic(err)
 		sigChan <- syscall.SIGINT
@@ -70,7 +70,11 @@ func main() {
 	// set up channels
 	outgoingToNSQChan := make(chan *server.BotResponse)
 
-	outputWriter := nsq.NewWriter(outputWriterAddress)
+	outputWriter, err := nsq.NewProducer(outputWriterAddress, nsq.NewConfig())
+	if err != nil {
+		panic(err)
+		sigChan <- syscall.SIGINT
+	}
 
 	// set up heartbeat ticker
 	heartbeatTicker := time.NewTicker(1 * time.Second)
@@ -79,8 +83,8 @@ func main() {
 	bot3server := &Bot3Server{Config: config, OutgoingChan: outgoingToNSQChan}
 	bot3server.Initialize()
 
-	incomingFromIRC.AddHandler(bot3server)
-	incomingFromIRC.ConnectToLookupd(lookupdAddress)
+	incomingFromIRC.SetHandler(bot3server)
+	incomingFromIRC.ConnectToNSQLookupd(lookupdAddress)
 
 	go bot3server.HandleOutgoing(outgoingToNSQChan, heartbeatTicker.C, outputWriter, bot3server.UniqueID)
 
@@ -153,7 +157,7 @@ func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
 	return nil
 }
 
-func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Writer, serverID uuid.UUID) {
+func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse, heartbeatTicker <-chan time.Time, outputWriter *nsq.Producer, serverID uuid.UUID) {
 
 	for {
 		select {
