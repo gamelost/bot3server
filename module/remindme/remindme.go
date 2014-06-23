@@ -30,17 +30,18 @@ type RemindMeService struct {
 	Reminders map[string]*Reminder
 }
 
-func (svc *RemindMeService) NewService(config *iniconf.ConfigFile) server.BotHandler {
-
+func (svc *RemindMeService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &RemindMeService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *RemindMeService) DispatchRequest(botRequest *server.BotRequest) {
 
 	arg := botRequest.LineTextWithoutCommand()
 	rem, err := HandleCommand(arg)
+	botResponse := svc.CreateBotResponse(botRequest)
 
 	if err != nil {
 		botResponse.SetSingleLineResponse(fmt.Sprintf("Bloop. Your request could not be parsed: %s", err.Error()))
@@ -57,10 +58,18 @@ func (svc *RemindMeService) Handle(botRequest *server.BotRequest, botResponse *s
 		} else if rem.Duration > MAXDURATION {
 			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, really? Maybe you should use a calendar instead.  Durations less than a week please.", botRequest.Nick))
 		} else {
-			time.Sleep(rem.Duration)
-			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.Nick, rem.Message))
+			botResponse.SetSingleLineResponse("I'll remind ya, m8!")
+			// spin off actual reminder as a goroutine
+			go func(rem *Reminder, botRequest *server.BotRequest) {
+				time.Sleep(rem.Duration)
+				botResponse := svc.CreateBotResponse(botRequest)
+				botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.Nick, rem.Message))
+				svc.PublishBotResponse(botResponse)
+			}(rem, botRequest)
 		}
 	}
+
+	svc.PublishBotResponse(botResponse)
 }
 
 func ReminderStructFromCommand(cmd string) (reminder *Reminder, err error) {

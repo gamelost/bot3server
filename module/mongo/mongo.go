@@ -26,10 +26,11 @@ type MongoService struct {
 	db      *mgo.Database
 }
 
-func (svc *MongoService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *MongoService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 
 	var newSvc = &MongoService{}
 	newSvc.BotHandlerService.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 
 	newSvc.ok = false
 
@@ -61,7 +62,9 @@ func (svc *MongoService) NewService(config *iniconf.ConfigFile) server.BotHandle
 	return newSvc
 }
 
-func (svc *MongoService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *MongoService) DispatchRequest(botRequest *server.BotRequest) {
+
+	botResponse := svc.CreateBotResponse(botRequest)
 	if !svc.ok {
 		botResponse.SetSingleLineResponse("Mongo disabled")
 		return
@@ -105,6 +108,7 @@ func (svc *MongoService) Handle(botRequest *server.BotRequest, botResponse *serv
 		}
 	}
 	botResponse.SetSingleLineResponse(resp)
+	svc.PublishBotResponse(botResponse)
 }
 
 func (svc *MongoService) doInsert(collection string, arg *map[string]interface{}) string {

@@ -1,20 +1,28 @@
 package server
 
 import (
-	"fmt"
-	// irc "github.com/gamelost/goirc/client"
 	iniconf "code.google.com/p/goconf/conf"
+	"fmt"
 	"strings"
 	"time"
 )
 
 type BotHandler interface {
-	NewService(config *iniconf.ConfigFile) BotHandler
-	Handle(botRequest *BotRequest, botResponse *BotResponse)
+	NewService(config *iniconf.ConfigFile, outgoingToIRCChan chan *BotResponse) BotHandler
+	DispatchRequest(botRequest *BotRequest)
+}
+
+func (bhs *BotHandlerService) CreateBotResponse(botRequest *BotRequest) *BotResponse {
+	return &BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
+}
+
+func (bhs *BotHandlerService) PublishBotResponse(botResponse *BotResponse) {
+	bhs.PublishToIRCChan <- botResponse
 }
 
 type BotHandlerService struct {
-	Config *iniconf.ConfigFile
+	PublishToIRCChan chan *BotResponse
+	Config           *iniconf.ConfigFile
 }
 
 const (

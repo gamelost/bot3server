@@ -25,10 +25,11 @@ var stateCityAPICallUrl string
 var cityAPICallUrl string
 var airportAPICallUrl string
 
-func (svc *WeatherConditionsService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *WeatherConditionsService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 
 	newSvc := &WeatherConditionsService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 
 	apiurl, _ := newSvc.Config.GetString("weather", "wundergroundapiurl")
 	apikey, _ := newSvc.Config.GetString("weather", "wundergroundapikey")
@@ -50,8 +51,9 @@ func init() {
 	weatherConditionsCache = cache.New(time.Minute*15, time.Minute*5)
 }
 
-func (svc *WeatherConditionsService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *WeatherConditionsService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	var err error
 	var resp string
 
@@ -65,6 +67,8 @@ func (svc *WeatherConditionsService) Handle(botRequest *server.BotRequest, botRe
 	} else {
 		botResponse.SetSingleLineResponse(resp)
 	}
+
+	svc.PublishBotResponse(botResponse)
 }
 
 func getWeatherConditionsForLocation(command string) (weatherResponse string, err error) {

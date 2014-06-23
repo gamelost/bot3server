@@ -23,18 +23,21 @@ type DiceResult struct {
 	Description string `json:"description"`
 }
 
-func (svc *DiceService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *DiceService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &DiceService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *DiceService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *DiceService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	log.Println("Received Handle for !dice")
 	result := svc.RollDice(parseInput(botRequest.Text()))
 	strResp := fmt.Sprintf("%s: your roll:[%s] result:[%s], description:[%s]", botRequest.Nick, result.Input, result.Output, result.Description)
 	botResponse.SetSingleLineResponse(strResp)
+	svc.PublishBotResponse(botResponse)
 }
 
 func (svc *DiceService) RollDice(diceString string) *DiceResult {

@@ -10,14 +10,17 @@ type HelpService struct {
 	server.BotHandlerService
 }
 
-func (svc *HelpService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *HelpService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 
 	var newSvc = &HelpService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *HelpService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *HelpService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	botResponse.SetSingleLineResponse("i wont make you coffee and give a reach-around but you can ask the following: !remindme !fight !cah !inconceivable !slap !weather !forecast !nextwedding !zed")
+	svc.PublishBotResponse(botResponse)
 }

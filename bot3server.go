@@ -1,27 +1,23 @@
 package main
 
 import (
-	"github.com/gamelost/bot3server/module/fight"
-	"github.com/gamelost/bot3server/module/mongo"
-	// "github.com/gamelost/bot3server/module/logger"
-	"github.com/gamelost/bot3server/module/help"
-	"github.com/gamelost/bot3server/module/inconceivable"
-	"github.com/gamelost/bot3server/module/slap"
-	"github.com/gamelost/bot3server/server"
-	//"github.com/gamelost/bot3server/module/sleep"
-	"github.com/gamelost/bot3server/module/cah"
-	"github.com/gamelost/bot3server/module/nextwedding"
-	// "github.com/gamelost/bot3server/module/panic"
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
 	nsq "github.com/bitly/go-nsq"
-	"github.com/gamelost/bot3server/module/boulderingtime"
+	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/catfacts"
 	"github.com/gamelost/bot3server/module/dice"
+	"github.com/gamelost/bot3server/module/fight"
+	"github.com/gamelost/bot3server/module/help"
+	"github.com/gamelost/bot3server/module/inconceivable"
+	"github.com/gamelost/bot3server/module/mongo"
+	"github.com/gamelost/bot3server/module/nextwedding"
 	"github.com/gamelost/bot3server/module/remindme"
+	"github.com/gamelost/bot3server/module/slap"
 	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
 	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
 	"github.com/gamelost/bot3server/module/zed"
+	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
 	"log"
 	"os"
@@ -131,20 +127,19 @@ func (bs *Bot3Server) initServices() error {
 	bs.Handlers = make(map[string]server.BotHandler)
 
 	// implement all services
-	bs.AddHandler("fight", (new(fight.FightService)).NewService(bs.Config))
-	bs.AddHandler("cah", (new(cah.CahService)).NewService(bs.Config))
-	bs.AddHandler("mongo", (new(mongo.MongoService)).NewService(bs.Config))
-	bs.AddHandler("slap", (new(slap.SlapService)).NewService(bs.Config))
-	bs.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService(bs.Config))
-	bs.AddHandler("help", (new(help.HelpService)).NewService(bs.Config))
-	bs.AddHandler("remindme", (new(remindme.RemindMeService)).NewService(bs.Config))
-	bs.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService(bs.Config))
-	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config))
-	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config))
-	bs.AddHandler("zed", (new(zed.ZedsDeadService)).NewService(bs.Config))
-	bs.AddHandler("boulderingtime", (new(boulderingtime.BoulderingTimeService)).NewService(bs.Config))
-	bs.AddHandler("dice", (new(dice.DiceService)).NewService(bs.Config))
-	bs.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService(bs.Config))
+	bs.AddHandler("fight", (new(fight.FightService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("cah", (new(cah.CahService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("mongo", (new(mongo.MongoService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("slap", (new(slap.SlapService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("help", (new(help.HelpService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("remindme", (new(remindme.RemindMeService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("zed", (new(zed.ZedsDeadService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("dice", (new(dice.DiceService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService(bs.Config, bs.OutgoingChan))
 	return nil
 }
 
@@ -203,9 +198,8 @@ func (bs *Bot3Server) HandleIncoming(botRequest *server.BotRequest) error {
 
 		if handler != nil {
 			//log.Printf("Assigning handler for: %s\n", command)
-			botResponse := &server.BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
-			handler.Handle(botRequest, botResponse)
-			bs.OutgoingChan <- botResponse
+			//botResponse := &server.BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
+			handler.DispatchRequest(botRequest)
 		}
 	}
 

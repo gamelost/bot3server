@@ -10,14 +10,17 @@ type InconceivableService struct {
 	server.BotHandlerService
 }
 
-func (svc *InconceivableService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *InconceivableService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &InconceivableService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *InconceivableService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *InconceivableService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	botResponse.SetSingleLineResponse(fmt.Sprintf("I do not think this word means what you think it means, %s!", botRequest.Nick))
 	botResponse.ResponseType = "ACTION"
+	svc.PublishBotResponse(botResponse)
 }

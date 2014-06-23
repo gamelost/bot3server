@@ -10,13 +10,16 @@ type ZedsDeadService struct {
 	server.BotHandlerService
 }
 
-func (svc *ZedsDeadService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *ZedsDeadService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &ZedsDeadService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *ZedsDeadService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *ZedsDeadService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	botResponse.SetSingleLineResponse(fmt.Sprintf("Zed's dead baby. Zed's dead."))
+	svc.PublishBotResponse(botResponse)
 }

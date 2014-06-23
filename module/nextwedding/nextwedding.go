@@ -11,15 +11,18 @@ type NextWeddingService struct {
 	server.BotHandlerService
 }
 
-func (svc *NextWeddingService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *NextWeddingService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &NextWeddingService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *NextWeddingService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *NextWeddingService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	botResponse.SetSingleLineResponse(durationToWeddingDate())
+	svc.PublishBotResponse(botResponse)
 }
 
 func durationToWeddingDate() string {

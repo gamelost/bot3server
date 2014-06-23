@@ -22,17 +22,21 @@ type CatFactsService struct {
 	server.BotHandlerService
 }
 
-func (svc *CatFactsService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *CatFactsService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 	newSvc := &CatFactsService{}
 	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
 	return newSvc
 }
 
-func (svc *CatFactsService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *CatFactsService) DispatchRequest(botRequest *server.BotRequest) {
+
+	botResponse := svc.CreateBotResponse(botRequest)
 	what := botRequest.Text()
 	number := getBoundedIntegerFromInput(what, 1, 10)
 	result := svc.CatFactsApi(number)
 	botResponse.SetMultipleLineResponse(result.Facts)
+	svc.PublishBotResponse(botResponse)
 }
 
 func (svc *CatFactsService) CatFactsApi(number int) *CatFactsResult {

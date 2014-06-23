@@ -40,11 +40,11 @@ type CahCardCollection []struct {
 	Text       string `json:"text"`
 }
 
-func (svc *CahService) NewService(config *iniconf.ConfigFile) server.BotHandler {
+func (svc *CahService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
 
 	var newSvc = &CahService{}
 	newSvc.Config = config
-
+	newSvc.PublishToIRCChan = publishToIRCChan
 	newSvc.CahCardCollection = &CahCardCollection{}
 
 	// set up the rng
@@ -63,14 +63,17 @@ func (svc *CahService) NewService(config *iniconf.ConfigFile) server.BotHandler 
 	return newSvc
 }
 
-func (svc *CahService) Handle(botRequest *server.BotRequest, botResponse *server.BotResponse) {
+func (svc *CahService) DispatchRequest(botRequest *server.BotRequest) {
 
+	botResponse := svc.CreateBotResponse(botRequest)
 	strInput := parseInput(botRequest.Text())
 	if len(strInput) > 0 {
 		botResponse.SetSingleLineResponse(svc.RandomCahMessageWithArgument(strInput))
 	} else {
 		botResponse.SetSingleLineResponse(svc.RandomCahMessage())
 	}
+
+	svc.PublishBotResponse(botResponse)
 }
 
 func (svc *CahService) RandomCard() *CahCard {
