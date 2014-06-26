@@ -1320,7 +1320,7 @@
     {"id":1320,"cardType":"Q","text":"Baskin Robbins just added a 32nd flavor: _!","numAnswers":1,"expansion": "Image1"},
     {"id":1321,"cardType":"Q","text":"I can drive and ____ at the same time.","numAnswers":1,"expansion": "Image1"},
     {"id":1322,"cardType":"Q","text":"_ ain't nothin' to fuck wit'!","numAnswers":1,"expansion": "Image1"},
-    {"id":1322,"cardType":"A","text":"操！' to fuck wit'!","numAnswers":0,"expansion": "Image1"},
-    {"id":1322,"cardType":"A","text":"操你妈个大傻逼！!","numAnswers":0,"expansion": "Image1"}，
-    {"id":1322,"cardType":"A","text":"难道你还不够囧吗!","numAnswers":0,"expansion": "Image1"}
+    {"id":1323,"cardType":"A","text":"操！' to fuck wit'!","numAnswers":0,"expansion": "Image1"},
+    {"id":1324,"cardType":"A","text":"操你妈个大傻逼！!","numAnswers":0,"expansion": "Image1"}，
+    {"id":1325,"cardType":"A","text":"难道你还不够囧吗!","numAnswers":0,"expansion": "Image1"}
 ]
