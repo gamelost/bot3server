@@ -3,6 +3,8 @@ package s
 import (
 	iniconf "code.google.com/p/goconf/conf"
 	"github.com/gamelost/bot3server/server"
+	"strings"
+	"fmt"
 )
 
 type SService struct {
@@ -19,5 +21,8 @@ func (svc *SService) DispatchRequest(botRequest *server.BotRequest) {
 }
 
 func (svc *SService) SubStringToStatement(sub string, written string) string {
-	return "I had a package golden - I lost it in the sand"
+	ary := strings.Split(sub[1:], "/")
+	first = ary[0]
+	second = ary[1]
+	return
 }

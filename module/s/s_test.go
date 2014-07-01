@@ -4,7 +4,7 @@ import "testing"
 
 var svc *SService
 
-func TestS(t *testing.T) {
+func TestSubstitution(t *testing.T) {
 	sub := "/guinea/package"
 	written := "I had a guinea golden - I lost it in the sand"
 	expectedSub := "I had a package golden - I lost it in the sand"
