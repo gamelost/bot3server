@@ -1,10 +1,10 @@
 package main
 
 import (
+	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
 	"fmt"
 
-	iniconf "code.google.com/p/goconf/conf"
 	"github.com/alanjcfs/bot3server/module/cah"
 	nsq "github.com/bitly/go-nsq"
 	// "github.com/gamelost/bot3server/module/cah"
@@ -15,12 +15,6 @@ import (
 	"github.com/gamelost/bot3server/module/help"
 	"github.com/gamelost/bot3server/module/inconceivable"
 	// "github.com/gamelost/bot3server/module/mongo"
-	"log"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 
 	"github.com/gamelost/bot3server/module/nextwedding"
 	"github.com/gamelost/bot3server/module/remindme"
@@ -31,6 +25,12 @@ import (
 	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
 	"labix.org/v2/mgo"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
