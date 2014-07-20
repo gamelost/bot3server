@@ -4,6 +4,8 @@ import (
 	// "errors"
 	"encoding/json"
 	// "fmt"
+	iniconf "code.google.com/p/goconf/conf"
+	"github.com/gamelost/bot3server/server"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -12,9 +14,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	iniconf "code.google.com/p/goconf/conf"
-	"github.com/gamelost/bot3server/server"
 )
 
 // source URL for CAH card templates
