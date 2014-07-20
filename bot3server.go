@@ -4,18 +4,14 @@ import (
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
 	"fmt"
-
-	"github.com/alanjcfs/bot3server/module/cah"
 	nsq "github.com/bitly/go-nsq"
-	// "github.com/gamelost/bot3server/module/cah"
-	"github.com/alanjcfs/bot3server/module/mongo"
+	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/catfacts"
 	"github.com/gamelost/bot3server/module/dice"
 	"github.com/gamelost/bot3server/module/fight"
 	"github.com/gamelost/bot3server/module/help"
 	"github.com/gamelost/bot3server/module/inconceivable"
-	// "github.com/gamelost/bot3server/module/mongo"
-
+	"github.com/gamelost/bot3server/module/mongo"
 	"github.com/gamelost/bot3server/module/nextwedding"
 	"github.com/gamelost/bot3server/module/remindme"
 	"github.com/gamelost/bot3server/module/slap"
@@ -110,6 +106,7 @@ func (bs *Bot3Server) Initialize() {
 
 		bs.UniqueID = uuid.NewV1()
 		bs.initServices()
+		bs.SetupMongoDBConnection()
 		bs.Initialized = true
 	}
 }
@@ -155,7 +152,7 @@ func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
 
-	err := bs.doInsert(req)
+	err := bs.DoInsert(req)
 	if err != nil {
 		return err
 	}
@@ -165,14 +162,7 @@ func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
 	return nil
 }
 
-func (bs *Bot3Server) doInsert(req *server.BotRequest) error {
-	if bs.MongoDB == nil {
-		log.Printf("Setting up connection and inserting")
-		bs.SetupMongoDBConnection()
-	} else {
-		log.Printf("Already connected to Mongo, inserting")
-	}
-
+func (bs *Bot3Server) DoInsert(req *server.BotRequest) error {
 	c := bs.MongoDB.C("chatlog")
 	err := c.Insert(map[string]string{"nick": req.Nick, "text": req.Text()})
 	if err != nil {
@@ -181,8 +171,8 @@ func (bs *Bot3Server) doInsert(req *server.BotRequest) error {
 	return nil
 }
 
+// Connect to Mongo reading from the configuration file
 func (bs *Bot3Server) SetupMongoDBConnection() error {
-	// Connect to Mongo.
 	servers, err := bs.Config.GetString("mongo", "servers")
 	if err != nil {
 		return err
