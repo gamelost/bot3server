@@ -163,7 +163,7 @@ func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
 
 func (bs *Bot3Server) DoInsert(req *server.BotRequest) error {
 	c := bs.MongoDB.C("chatlog")
-	err := c.Insert(map[string]string{"nick": req.Nick, "text": req.Text()})
+	err := c.Insert(req)
 	if err != nil {
 		return err
 	}
