@@ -1,16 +1,27 @@
 package main
 
 import (
-	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
+	"fmt"
+
+	iniconf "code.google.com/p/goconf/conf"
+	"github.com/alanjcfs/bot3server/module/cah"
 	nsq "github.com/bitly/go-nsq"
-	"github.com/gamelost/bot3server/module/cah"
+	// "github.com/gamelost/bot3server/module/cah"
+	"github.com/alanjcfs/bot3server/module/mongo"
 	"github.com/gamelost/bot3server/module/catfacts"
 	"github.com/gamelost/bot3server/module/dice"
 	"github.com/gamelost/bot3server/module/fight"
 	"github.com/gamelost/bot3server/module/help"
 	"github.com/gamelost/bot3server/module/inconceivable"
-	"github.com/gamelost/bot3server/module/mongo"
+	// "github.com/gamelost/bot3server/module/mongo"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/gamelost/bot3server/module/nextwedding"
 	"github.com/gamelost/bot3server/module/remindme"
 	"github.com/gamelost/bot3server/module/slap"
@@ -19,12 +30,7 @@ import (
 	"github.com/gamelost/bot3server/module/zed"
 	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
-	"log"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
+	"labix.org/v2/mgo"
 )
 
 const DEFAULT_CONFIG_FILENAME = "bot3server.config"
@@ -94,6 +100,8 @@ type Bot3Server struct {
 	Handlers     map[string]server.BotHandler
 	OutgoingChan chan *server.BotResponse
 	UniqueID     uuid.UUID
+	MongoSession *mgo.Session
+	MongoDB      *mgo.Database
 }
 
 func (bs *Bot3Server) Initialize() {
@@ -144,11 +152,55 @@ func (bs *Bot3Server) initServices() error {
 }
 
 func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
-
-	//	bs.IncomingChan <- message
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
+
+	err := bs.doInsert(req)
+	if err != nil {
+		return err
+	}
+
+	//	bs.IncomingChan <- message
 	go bs.HandleIncoming(req)
+	return nil
+}
+
+func (bs *Bot3Server) doInsert(req *server.BotRequest) error {
+	if bs.MongoDB == nil {
+		log.Printf("Setting up connection and inserting")
+		bs.SetupMongoDBConnection()
+	} else {
+		log.Printf("Already connected to Mongo, inserting")
+	}
+
+	c := bs.MongoDB.C("chatlog")
+	err := c.Insert(map[string]string{req.Nick: req.Text()})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (bs *Bot3Server) SetupMongoDBConnection() error {
+	// Connect to Mongo.
+	servers, err := bs.Config.GetString("mongo", "servers")
+	if err != nil {
+		return err
+	}
+
+	bs.MongoSession, err = mgo.Dial(servers)
+	if err != nil {
+		return err
+	}
+
+	db, err := bs.Config.GetString("mongo", "db")
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("Successfully obtained config from mongo")
+	}
+
+	bs.MongoDB = bs.MongoSession.DB(db)
 	return nil
 }
 
