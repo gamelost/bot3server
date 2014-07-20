@@ -3,7 +3,6 @@ package main
 import (
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
-	"fmt"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/catfacts"
@@ -187,7 +186,7 @@ func (bs *Bot3Server) SetupMongoDBConnection() error {
 	if err != nil {
 		return err
 	} else {
-		fmt.Println("Successfully obtained config from mongo")
+		log.Println("Successfully obtained config from mongo")
 	}
 
 	bs.MongoDB = bs.MongoSession.DB(db)
