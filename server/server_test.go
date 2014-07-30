@@ -50,5 +50,18 @@ func TestCommandString(t *testing.T) {
 	if getCommandFromString("!") != "" {
 		t.Errorf("Command string is incorrect.")
 	}
-	
+
+}
+
+func TestGetCommandFromString(t *testing.T) {
+	// Testing command with arguments
+	if getCommandFromString("!foo bar") != "foo" {
+		t.Errorf("Did not get foo when passing `!foo bar`")
+	}
+	if getCommandFromString("!foo") != "foo" {
+		t.Errorf("Did not get foo when passing !foo")
+	}
+	if getCommandFromString("!") != "" {
+		t.Errorf("Did not get blank string from passing bare `!`")
+	}
 }

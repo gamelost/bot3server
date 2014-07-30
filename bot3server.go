@@ -19,6 +19,7 @@ import (
 	"github.com/gamelost/bot3server/module/zed"
 	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
+	"labix.org/v2/mgo"
 	"log"
 	"os"
 	"os/signal"
@@ -94,6 +95,8 @@ type Bot3Server struct {
 	Handlers     map[string]server.BotHandler
 	OutgoingChan chan *server.BotResponse
 	UniqueID     uuid.UUID
+	MongoSession *mgo.Session
+	MongoDB      *mgo.Database
 }
 
 func (bs *Bot3Server) Initialize() {
@@ -102,6 +105,7 @@ func (bs *Bot3Server) Initialize() {
 
 		bs.UniqueID = uuid.NewV1()
 		bs.initServices()
+		bs.SetupMongoDBConnection()
 		bs.Initialized = true
 	}
 }
@@ -144,11 +148,48 @@ func (bs *Bot3Server) initServices() error {
 }
 
 func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
-
-	//	bs.IncomingChan <- message
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
+
+	err := bs.DoInsert(req)
+	if err != nil {
+		return err
+	}
+
+	//	bs.IncomingChan <- message
 	go bs.HandleIncoming(req)
+	return nil
+}
+
+func (bs *Bot3Server) DoInsert(req *server.BotRequest) error {
+	c := bs.MongoDB.C("chatlog")
+	err := c.Insert(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Connect to Mongo reading from the configuration file
+func (bs *Bot3Server) SetupMongoDBConnection() error {
+	servers, err := bs.Config.GetString("mongo", "servers")
+	if err != nil {
+		return err
+	}
+
+	bs.MongoSession, err = mgo.Dial(servers)
+	if err != nil {
+		return err
+	}
+
+	db, err := bs.Config.GetString("mongo", "db")
+	if err != nil {
+		return err
+	} else {
+		log.Println("Successfully obtained config from mongo")
+	}
+
+	bs.MongoDB = bs.MongoSession.DB(db)
 	return nil
 }
 
