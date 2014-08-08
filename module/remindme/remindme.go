@@ -2,9 +2,13 @@ package remindme
 
 import (
 	iniconf "code.google.com/p/goconf/conf"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gamelost/bot3server/server"
+	"github.com/twinj/uuid"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -16,32 +20,102 @@ const MAXDURATION = time.Hour * 24 * 7
 // set a min duration
 const MINDURATION = time.Second * 2
 
+const DATADIR_NAME = "data"
+
 // string messages
 const INSUFFICENT_ARGS = "Insufficent number of arguments provided.  Need to provide a duration and message."
 
-type Reminder struct {
-	Duration time.Duration
-	NotifyAt time.Time
-	Message  string
+func NewRemindMeService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) *RemindMeService {
+	newSvc := &RemindMeService{}
+	newSvc.Config = config
+	newSvc.PublishToIRCChan = publishToIRCChan
+	//newSvc.createDataDirectory()
+	newSvc.Reminders = &ReminderList{}
+	newSvc.Reminders.ReminderMap = make(map[string]*Reminder)
+	//newSvc.loadRemindersFromDataDirectory()
+
+	// switch format of uuid
+	uuid.SwitchFormat(uuid.Clean, true)
+
+	return newSvc
 }
 
 type RemindMeService struct {
 	server.BotHandlerService
-	Reminders map[string]*Reminder
+	Reminders *ReminderList
 }
 
-func (svc *RemindMeService) NewService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) server.BotHandler {
-	newSvc := &RemindMeService{}
-	newSvc.Config = config
-	newSvc.PublishToIRCChan = publishToIRCChan
-	return newSvc
+func (svc *RemindMeService) createDataDirectory() {
+
+	// check if data directory was created
+	fiinfo, err := os.Stat(DATADIR_NAME)
+	if err == nil && fiinfo.IsDir() {
+		// no such file, fail
+		return
+	} else {
+		// create data directory
+		err := os.Mkdir(DATADIR_NAME, 0777)
+		if err != nil {
+			panic("Unable to create data directory.")
+		}
+	}
+}
+
+func (svc *RemindMeService) loadRemindersFromDataDirectory() {
+
+	// clear out the map
+	svc.Reminders.ReminderMap = make(map[string]*Reminder)
+
+	files, err := ioutil.ReadDir(DATADIR_NAME)
+	if err != nil {
+		panic(err)
+	}
+
+	// iterate through all files
+	for _, f := range files {
+		// ignore files that dont end with .json
+		if strings.HasSuffix(f.Name(), ".json") {
+			rem := svc.FileToReminder(f.Name())
+			svc.Reminders.AddReminder(rem)
+		}
+	}
+}
+
+func (svc *RemindMeService) FileToReminder(filename string) *Reminder {
+
+	rem := &Reminder{}
+	bytes, err := ioutil.ReadFile(DATADIR_NAME + "/" + filename)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(bytes, rem)
+
+	fmt.Printf("Reminder: %+v\n", rem)
+	return rem
+}
+
+func (svc *RemindMeService) WriteReminderToDataDir(rem *Reminder) {
+
+	data, err := json.Marshal(rem)
+	if err != nil {
+		panic(err.Error())
+	}
+	filename := fmt.Sprintf("%s.json", rem.ReminderIdentity())
+	ioutil.WriteFile(DATADIR_NAME+"/"+filename, data, 0644)
+}
+
+func (svc *RemindMeService) RemoveReminderFromDataDir(rem *Reminder) error {
+
+	filename := fmt.Sprintf("%s.json", rem.ReminderIdentity())
+	err := os.Remove(DATADIR_NAME + "/" + filename)
+	return err
 }
 
 func (svc *RemindMeService) DispatchRequest(botRequest *server.BotRequest) {
 
-	arg := botRequest.LineTextWithoutCommand()
-	rem, err := HandleCommand(arg)
+	cmd := botRequest.LineTextWithoutCommand()
 	botResponse := svc.CreateBotResponse(botRequest)
+	rem, err := reminderStructFromCommand(botRequest.Nick, cmd)
 
 	if err != nil {
 		botResponse.SetSingleLineResponse(fmt.Sprintf("Bloop. Your request could not be parsed: %s", err.Error()))
@@ -49,8 +123,23 @@ func (svc *RemindMeService) DispatchRequest(botRequest *server.BotRequest) {
 
 		// nil reminder triggers status update instead
 		if rem == nil {
-			botResponse.SetSingleLineResponse(fmt.Sprintf("<placeholder for reminder summary>"))
-			return
+
+			reminderCount := len(svc.Reminders.ReminderMap)
+
+			if reminderCount == 0 {
+				botResponse.SetSingleLineResponse("No reminders in queue right now.")
+			} else {
+				responses := make([]string, reminderCount+1)
+				responses[0] = "Reminders in queue..."
+				var counter = 1
+				for _, r := range svc.Reminders.ReminderMap {
+
+					responses[counter] = fmt.Sprintf("[%d]: %s, reminder will occur on: %v, (%v from now)", counter, r.Message, r.ReminderOccursAt(), r.DurationUntilReminder())
+					counter++
+				}
+				botResponse.SetMultipleLineResponse(responses)
+			}
+
 		} else if rem.Duration < 0 {
 			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, only your mom would ask you to do something in the past. You're lame.", botRequest.Nick))
 		} else if rem.Duration < MINDURATION {
@@ -58,26 +147,82 @@ func (svc *RemindMeService) DispatchRequest(botRequest *server.BotRequest) {
 		} else if rem.Duration > MAXDURATION {
 			botResponse.SetSingleLineResponse(fmt.Sprintf("%s, really? Maybe you should use a calendar instead.  Durations less than a week please.", botRequest.Nick))
 		} else {
-			botResponse.SetSingleLineResponse("I'll remind ya, m8!")
-			// spin off actual reminder as a goroutine
-			go func(rem *Reminder, botRequest *server.BotRequest) {
-				time.Sleep(rem.Duration)
-				botResponse := svc.CreateBotResponse(botRequest)
-				botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", botRequest.Nick, rem.Message))
-				svc.PublishBotResponse(botResponse)
-			}(rem, botRequest)
+			err := svc.ScheduleReminder(rem, botRequest)
+			if err == nil {
+				botResponse.SetSingleLineResponse("I'll remind ya, m8!")
+			}
 		}
 	}
 
 	svc.PublishBotResponse(botResponse)
 }
 
-func ReminderStructFromCommand(cmd string) (reminder *Reminder, err error) {
+func (svc *RemindMeService) ScheduleReminder(rem *Reminder, botRequest *server.BotRequest) error {
 
-	r := &Reminder{}
+	svc.Reminders.AddReminder(rem)
+	//svc.WriteReminderToDataDir(rem)
+	// set the afterfunc
+	time.AfterFunc(rem.Duration, func() {
+		botResponse := svc.CreateBotResponse(botRequest)
+		botResponse.SetSingleLineResponse(fmt.Sprintf("%s, you asked me to remind you: %s", rem.Recipient, rem.Message))
+		svc.PublishBotResponse(botResponse)
+		svc.RemoveReminder(rem)
+	})
+
+	return nil
+}
+
+func (svc *RemindMeService) RemoveReminder(rem *Reminder) {
+	svc.Reminders.RemoveReminder(rem)
+	//svc.RemoveReminderFromDataDir(rem)
+}
+
+type Reminder struct {
+	Duration  time.Duration
+	CreatedOn time.Time
+	Message   string
+	Recipient string
+	Identity  string
+}
+
+func (rem *Reminder) ReminderIdentity() string {
+
+	if rem.Identity == "" {
+		uuid.SwitchFormat(uuid.Clean, true)
+		rem.Identity = fmt.Sprintf("reminder-%s-%s", rem.Recipient, uuid.NewV1().String())
+	}
+	return rem.Identity
+}
+
+func (rem *Reminder) ReminderOccursAt() time.Time {
+	return rem.CreatedOn.Add(rem.Duration)
+}
+
+func (rem *Reminder) DurationUntilReminder() time.Duration {
+	return rem.ReminderOccursAt().Sub(time.Now())
+}
+
+// struct to contain, and organize
+// all pending reminders
+type ReminderList struct {
+	ReminderMap map[string]*Reminder
+}
+
+func (rl *ReminderList) AddReminder(rem *Reminder) {
+	rl.ReminderMap[rem.ReminderIdentity()] = rem
+}
+
+func (rl *ReminderList) RemoveReminder(rem *Reminder) {
+	delete(rl.ReminderMap, rem.ReminderIdentity())
+}
+
+func reminderStructFromCommand(recipient string, cmd string) (reminder *Reminder, err error) {
+
+	r := &Reminder{Recipient: recipient, CreatedOn: time.Now()}
+	r.ReminderIdentity()
 	// see if cmd is empty
 	cmd = strings.TrimSpace(cmd)
-	if cmd == "" {
+	if cmd == "" || recipient == "" {
 		return nil, nil
 	} else {
 
@@ -104,10 +249,4 @@ func ReminderStructFromCommand(cmd string) (reminder *Reminder, err error) {
 			}
 		}
 	}
-}
-
-func HandleCommand(cmd string) (rem *Reminder, err error) {
-
-	reminder, err := ReminderStructFromCommand(cmd)
-	return reminder, err
 }

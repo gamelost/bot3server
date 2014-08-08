@@ -8,7 +8,6 @@ import (
 )
 
 type BotHandler interface {
-	NewService(config *iniconf.ConfigFile, outgoingToIRCChan chan *BotResponse) BotHandler
 	DispatchRequest(botRequest *BotRequest)
 }
 

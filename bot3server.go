@@ -80,7 +80,7 @@ func main() {
 	bot3server := &Bot3Server{Config: config, OutgoingChan: outgoingToNSQChan}
 	bot3server.Initialize()
 
-	incomingFromIRC.SetHandler(bot3server)
+	incomingFromIRC.AddHandler(bot3server)
 	incomingFromIRC.ConnectToNSQLookupd(lookupdAddress)
 
 	go bot3server.HandleOutgoing(outgoingToNSQChan, heartbeatTicker.C, outputWriter, bot3server.UniqueID)
@@ -137,7 +137,7 @@ func (bs *Bot3Server) initServices() error {
 	bs.AddHandler("slap", (new(slap.SlapService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("inconceivable", (new(inconceivable.InconceivableService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("help", (new(help.HelpService)).NewService(bs.Config, bs.OutgoingChan))
-	bs.AddHandler("remindme", (new(remindme.RemindMeService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("remindme", (remindme.NewRemindMeService(bs.Config, bs.OutgoingChan)))
 	bs.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config, bs.OutgoingChan))
@@ -148,6 +148,7 @@ func (bs *Bot3Server) initServices() error {
 }
 
 func (bs *Bot3Server) HandleMessage(message *nsq.Message) error {
+
 	var req = &server.BotRequest{}
 	json.Unmarshal(message.Body, req)
 
@@ -172,19 +173,20 @@ func (bs *Bot3Server) DoInsert(req *server.BotRequest) error {
 
 // Connect to Mongo reading from the configuration file
 func (bs *Bot3Server) SetupMongoDBConnection() error {
+
 	servers, err := bs.Config.GetString("mongo", "servers")
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	bs.MongoSession, err = mgo.Dial(servers)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	db, err := bs.Config.GetString("mongo", "db")
 	if err != nil {
-		return err
+		panic(err)
 	} else {
 		log.Println("Successfully obtained config from mongo")
 	}
