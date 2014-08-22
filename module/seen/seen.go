@@ -113,7 +113,7 @@ func DurationSinceLastMessage(username string, channel string, database *mgo.Dat
 
 	c := database.C("chatlog")
 	result := &SeenResult{}
-	err = c.Find(bson.M{"nick": bson.RegEx{Pattern: username, Options: "i"}, "channel": channel}).Sort("-_id").One(result)
+	err = c.Find(bson.M{"nick": bson.RegEx{Pattern: "^" + username, Options: "i"}, "channel": channel}).Sort("-_id").One(result)
 
 	if err != nil {
 		// fmt.Println(err.Error())
