@@ -13,8 +13,8 @@ import (
 	"strings"
 	// "time"
 	// "unicode"
-	"labix.org/v2/mgo"
-	// "labix.org/v2/mgo/bson"
+	"gopkg.in/mgo.v2"
+	// "gopkg.in/mgo.v2/bson"
 	iniconf "code.google.com/p/goconf/conf"
 	"launchpad.net/goyaml"
 )
