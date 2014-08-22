@@ -14,6 +14,7 @@ import (
 	"github.com/gamelost/bot3server/module/nextbaby"
 	"github.com/gamelost/bot3server/module/nextwedding"
 	"github.com/gamelost/bot3server/module/remindme"
+	"github.com/gamelost/bot3server/module/seen"
 	"github.com/gamelost/bot3server/module/slap"
 	"github.com/gamelost/bot3server/module/stats"
 	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
@@ -21,7 +22,7 @@ import (
 	"github.com/gamelost/bot3server/module/zed"
 	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
-	"labix.org/v2/mgo"
+	"gopkg.in/mgo.v2"
 	"log"
 	"os"
 	"os/signal"
@@ -148,6 +149,7 @@ func (bs *Bot3Server) initServices() error {
 	bs.AddHandler("dice", (new(dice.DiceService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("stats", (stats.NewStatsService(bs.Config, bs.OutgoingChan)))
+	bs.AddHandler("seen", (new(seen.SeenService)).NewService(bs.Config, bs.OutgoingChan))
 	return nil
 }
 
