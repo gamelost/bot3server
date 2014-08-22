@@ -2,8 +2,7 @@ package server
 
 import (
 	iniconf "code.google.com/p/goconf/conf"
-	"fmt"
-	"strings"
+	"github.com/gamelost/bot3server/util"
 	"time"
 )
 
@@ -81,46 +80,19 @@ func (response *BotResponse) SetMultipleLineResponse(rstr []string) {
 
 func (request *BotRequest) RequestIsCommand() bool {
 
-	return stringIsCommand(request.Text())
+	return util.StringIsCommand(request.Text())
 }
 
 func (request *BotRequest) Command() string {
 
-	return getCommandFromString(request.Text())
+	return util.GetCommandFromString(request.Text())
 }
 
 func (request *BotRequest) LineTextWithoutCommand() string {
 
 	if request.RequestIsCommand() {
-		lineTxt := strings.TrimPrefix(request.Text(), fmt.Sprintf("!%s", request.Command()))
-		return strings.TrimSpace(lineTxt)
+		return util.TrimCommandFromString(request.Text(), request.Command())
 	} else {
 		return request.Text()
 	}
-}
-
-func stringIsCommand(rawstring string) bool {
-
-	if strings.HasPrefix(rawstring, "!") {
-		return true
-	} else {
-		return false
-	}
-}
-
-func getCommandFromString(rawstring string) string {
-
-	var commandStr = ""
-
-	if stringIsCommand(rawstring) {
-		index := strings.Index(rawstring, " ")
-		if index > 0 {
-			commandStr = rawstring[1:index]
-		} else if index == -1 {
-			// no space, so return entirety of string except first char
-			commandStr = rawstring[1:len(rawstring)]
-		}
-	}
-
-	return commandStr
 }
