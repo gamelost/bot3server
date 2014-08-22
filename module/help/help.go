@@ -21,6 +21,6 @@ func (svc *HelpService) NewService(config *iniconf.ConfigFile, publishToIRCChan 
 func (svc *HelpService) DispatchRequest(botRequest *server.BotRequest) {
 
 	botResponse := svc.CreateBotResponse(botRequest)
-	botResponse.SetSingleLineResponse("i wont make you coffee and give a reach-around but you can ask the following: !remindme !fight !cah !inconceivable !slap !weather !forecast !nextwedding !zed")
+	botResponse.SetSingleLineResponse("i wont make you coffee and give a reach-around but you can ask the following: !remindme !fight !cah !inconceivable !slap !weather !forecast !nextwedding !nextbaby !zed !seen")
 	svc.PublishBotResponse(botResponse)
 }
