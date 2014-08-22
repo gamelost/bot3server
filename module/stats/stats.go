@@ -12,7 +12,7 @@ import (
 	// "strings"
 	// "time"
 	// "unicode"
-	"log"
+	//"log"
 )
 
 func NewStatsService(config *iniconf.ConfigFile, publishToIRCChan chan *server.BotResponse) *StatsService {
@@ -28,8 +28,6 @@ type StatsService struct {
 
 func (svc *StatsService) DispatchRequest(botRequest *server.BotRequest) {
 
-	//cmd := botRequest.LineTextWithoutCommand()
-	log.Println("Dispatch request for stats")
 	botResponse := svc.CreateBotResponse(botRequest)
 	botResponse.SetSingleLineResponse("stats module")
 
