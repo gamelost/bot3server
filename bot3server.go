@@ -19,6 +19,7 @@ import (
 	"github.com/gamelost/bot3server/module/stats"
 	wuconditions "github.com/gamelost/bot3server/module/weather/conditions"
 	wuforecast "github.com/gamelost/bot3server/module/weather/forecast"
+	"github.com/gamelost/bot3server/module/wq"
 	"github.com/gamelost/bot3server/module/zed"
 	"github.com/gamelost/bot3server/server"
 	"github.com/twinj/uuid"
@@ -145,6 +146,7 @@ func (bs *Bot3Server) initServices() error {
 	bs.AddHandler("nextbaby", (new(nextbaby.NextBabyService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("wq", (new(wikiquote.WikiQuoteService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("zed", (new(zed.ZedsDeadService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("dice", (new(dice.DiceService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("catfacts", (new(catfacts.CatFactsService)).NewService(bs.Config, bs.OutgoingChan))
