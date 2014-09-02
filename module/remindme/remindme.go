@@ -35,7 +35,7 @@ func NewRemindMeService(config *iniconf.ConfigFile, publishToIRCChan chan *serve
 	//newSvc.loadRemindersFromDataDirectory()
 
 	// switch format of uuid
-	uuid.SwitchFormat(uuid.Clean, true)
+	uuid.SwitchFormat(uuid.Clean)
 
 	return newSvc
 }
@@ -188,7 +188,7 @@ type Reminder struct {
 func (rem *Reminder) ReminderIdentity() string {
 
 	if rem.Identity == "" {
-		uuid.SwitchFormat(uuid.Clean, true)
+		uuid.SwitchFormat(uuid.Clean)
 		rem.Identity = fmt.Sprintf("reminder-%s-%s", rem.Recipient, uuid.NewV1().String())
 	}
 	return rem.Identity
