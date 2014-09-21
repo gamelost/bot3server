@@ -63,7 +63,6 @@ func (response *BotResponse) IsMultiLineResponse() bool {
 }
 
 func (response *BotResponse) SingleLineResponse() string {
-
 	return response.Response[0]
 }
 
@@ -74,8 +73,17 @@ func (response *BotResponse) SetSingleLineResponse(rstr string) {
 }
 
 func (response *BotResponse) SetMultipleLineResponse(rstr []string) {
-
 	response.Response = rstr
+}
+
+func (response *BotResponse) LinesAsByte() []byte {
+
+	payload := make([]byte, 256)
+	for _, value := range response.Response {
+		payload = append(payload, value...)
+		payload = append(payload, "\n"...)
+	}
+	return payload
 }
 
 func (request *BotRequest) RequestIsCommand() bool {

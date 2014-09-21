@@ -3,6 +3,7 @@ package main
 import (
 	iniconf "code.google.com/p/goconf/conf"
 	"encoding/json"
+	"fmt"
 	nsq "github.com/bitly/go-nsq"
 	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/catfacts"
@@ -13,6 +14,7 @@ import (
 	"github.com/gamelost/bot3server/module/mongo"
 	"github.com/gamelost/bot3server/module/nextbaby"
 	"github.com/gamelost/bot3server/module/nextwedding"
+	"github.com/gamelost/bot3server/module/pastebin"
 	"github.com/gamelost/bot3server/module/remindme"
 	"github.com/gamelost/bot3server/module/seen"
 	"github.com/gamelost/bot3server/module/slap"
@@ -43,6 +45,11 @@ const CONFIG_BOT3SERVER_OUTPUT = "bot3server-output"
 const CONFIG_OUTPUT_WRITER_ADDR = "output-writer-address"
 const CONFIG_LOOKUPD_ADDR = "lookupd-address"
 const TOPIC_MAIN = "main"
+
+// pastebin constants
+const PASTEBIN_HOST = "pastebin-host"
+const PASTEBIN_PATH = "pastebin-path"
+const PASTEBIN_MAXLINES = "pastebin-maxlines"
 
 var conf *iniconf.ConfigFile
 
@@ -94,13 +101,15 @@ func main() {
 }
 
 type Bot3Server struct {
-	Initialized  bool
-	Config       *iniconf.ConfigFile
-	Handlers     map[string]server.BotHandler
-	OutgoingChan chan *server.BotResponse
-	UniqueID     uuid.UUID
-	MongoSession *mgo.Session
-	MongoDB      *mgo.Database
+	Initialized      bool
+	Config           *iniconf.ConfigFile
+	Handlers         map[string]server.BotHandler
+	OutgoingChan     chan *server.BotResponse
+	UniqueID         uuid.UUID
+	MongoSession     *mgo.Session
+	MongoDB          *mgo.Database
+	PastebinService  *pastebin.PastebinService
+	PastebinMaxLines int
 }
 
 func (bs *Bot3Server) Initialize() {
@@ -110,8 +119,18 @@ func (bs *Bot3Server) Initialize() {
 		bs.UniqueID = uuid.NewV1()
 		bs.initServices()
 		bs.SetupMongoDBConnection()
+		bs.SetupPastebinService()
 		bs.Initialized = true
 	}
+}
+
+func (bs *Bot3Server) SetupPastebinService() {
+
+	pbHost, _ := bs.Config.GetString("pastebin", PASTEBIN_HOST)
+	pbPath, _ := bs.Config.GetString("pastebin", PASTEBIN_PATH)
+	bs.PastebinMaxLines, _ = bs.Config.GetInt("pastebin", PASTEBIN_MAXLINES)
+
+	bs.PastebinService = &pastebin.PastebinService{PostURL: pbHost, PostPath: pbPath}
 }
 
 func (bs *Bot3Server) AddHandler(key string, h server.BotHandler) {
@@ -208,8 +227,7 @@ func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse,
 	for {
 		select {
 		case msg := <-outgoingToNSQChan:
-			val, _ := json.Marshal(msg)
-			outputWriter.Publish("bot3server-output", val)
+			bs.PreProcessAndPublishOutgoing(msg, outputWriter)
 			break
 		case t := <-heartbeatTicker:
 			hb := &server.Bot3ServerHeartbeat{ServerID: serverID.String(), Timestamp: t}
@@ -218,6 +236,21 @@ func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse,
 			break
 		}
 	}
+}
+
+func (bs *Bot3Server) PreProcessAndPublishOutgoing(msg *server.BotResponse, outputWriter *nsq.Producer) {
+
+	if len(msg.Response) > bs.PastebinMaxLines {
+		totalLineLength := len(msg.Response)
+		resp, _ := bs.PastebinService.CreatePastebin(msg.LinesAsByte())
+		msg.Response = msg.Response[0:bs.PastebinMaxLines]
+
+		resp = fmt.Sprintf("(...remaining %d lines clipped. view all content at: %s)", (totalLineLength - bs.PastebinMaxLines), resp)
+		msg.Response = append(msg.Response, resp)
+	}
+
+	val, _ := json.Marshal(msg)
+	outputWriter.Publish("bot3server-output", val)
 }
 
 func (bs *Bot3Server) HandleIncoming(botRequest *server.BotRequest) error {
@@ -252,8 +285,9 @@ func (bs *Bot3Server) HandleIncoming(botRequest *server.BotRequest) error {
 			//botResponse := &server.BotResponse{Target: botRequest.Channel, Identifier: botRequest.Identifier}
 			handler.DispatchRequest(botRequest)
 		}
+	} else {
+		log.Println("Unable to handle incoming request: %v", botRequest)
 	}
-
 	// return error object (nil for now)
 	return nil
 }
