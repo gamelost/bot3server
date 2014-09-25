@@ -245,7 +245,7 @@ func (bs *Bot3Server) PreProcessAndPublishOutgoing(msg *server.BotResponse, outp
 		resp, _ := bs.PastebinService.CreatePastebin(msg.LinesAsByte())
 		msg.Response = msg.Response[0:bs.PastebinMaxLines]
 
-		resp = fmt.Sprintf("(...remaining %d lines clipped. view all content at: %s)", (totalLineLength - bs.PastebinMaxLines), resp)
+		resp = fmt.Sprintf("( ...remaining %d lines clipped. view all content at: %s )", (totalLineLength - bs.PastebinMaxLines), resp)
 		msg.Response = append(msg.Response, resp)
 	}
 
