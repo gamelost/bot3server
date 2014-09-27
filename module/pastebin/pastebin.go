@@ -21,7 +21,6 @@ type PastebinService struct {
 
 func (pbs *PastebinService) CreatePastebin(content []byte) (string, error) {
 
-	log.Printf("Creatin content for %s", content)
 	buf := bytes.NewBuffer(content)
 	resp, err := http.Post(pbs.PostURL+pbs.PostPath, "text/plain", buf)
 	if err != nil {
@@ -32,7 +31,6 @@ func (pbs *PastebinService) CreatePastebin(content []byte) (string, error) {
 		if err != nil {
 			log.Printf("Error occured %s", err.Error())
 		}
-		log.Printf("Response is %s", body)
 		keyStruct := &PastebinKeyResponse{}
 		json.Unmarshal(body, keyStruct)
 
