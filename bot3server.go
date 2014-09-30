@@ -14,7 +14,7 @@ import (
 	"github.com/gamelost/bot3server/module/mongo"
 	"github.com/gamelost/bot3server/module/nextbaby"
 	"github.com/gamelost/bot3server/module/nextwedding"
-	"github.com/gamelost/bot3server/module/pastebin"
+	"github.com/gamelost/bot3server/module/notehub"
 	"github.com/gamelost/bot3server/module/remindme"
 	"github.com/gamelost/bot3server/module/seen"
 	"github.com/gamelost/bot3server/module/slap"
@@ -47,9 +47,10 @@ const CONFIG_LOOKUPD_ADDR = "lookupd-address"
 const TOPIC_MAIN = "main"
 
 // pastebin constants
-const PASTEBIN_HOST = "pastebin-host"
-const PASTEBIN_PATH = "pastebin-path"
-const PASTEBIN_MAXLINES = "pastebin-maxlines"
+const NOTEHUB_POSTURL = "notehub-posturl"
+const NOTEHUB_PID = "notehub-pid"
+const NOTEHUB_PSK = "notehub-psk"
+const NOTEHUB_MAXLINES = "notehub-maxlines"
 
 var conf *iniconf.ConfigFile
 
@@ -101,15 +102,15 @@ func main() {
 }
 
 type Bot3Server struct {
-	Initialized      bool
-	Config           *iniconf.ConfigFile
-	Handlers         map[string]server.BotHandler
-	OutgoingChan     chan *server.BotResponse
-	UniqueID         uuid.UUID
-	MongoSession     *mgo.Session
-	MongoDB          *mgo.Database
-	PastebinService  *pastebin.PastebinService
-	PastebinMaxLines int
+	Initialized     bool
+	Config          *iniconf.ConfigFile
+	Handlers        map[string]server.BotHandler
+	OutgoingChan    chan *server.BotResponse
+	UniqueID        uuid.UUID
+	MongoSession    *mgo.Session
+	MongoDB         *mgo.Database
+	NotehubService  *notehub.NotehubService
+	NotehubMaxLines int
 }
 
 func (bs *Bot3Server) Initialize() {
@@ -119,18 +120,23 @@ func (bs *Bot3Server) Initialize() {
 		bs.UniqueID = uuid.NewV1()
 		bs.initServices()
 		bs.SetupMongoDBConnection()
-		bs.SetupPastebinService()
+		bs.SetupNotehubService()
 		bs.Initialized = true
 	}
 }
 
-func (bs *Bot3Server) SetupPastebinService() {
+func (bs *Bot3Server) SetupNotehubService() {
 
-	pbHost, _ := bs.Config.GetString("pastebin", PASTEBIN_HOST)
-	pbPath, _ := bs.Config.GetString("pastebin", PASTEBIN_PATH)
-	bs.PastebinMaxLines, _ = bs.Config.GetInt("pastebin", PASTEBIN_MAXLINES)
+	nhPostUrl, _ := bs.Config.GetString("notehub", NOTEHUB_POSTURL)
+	nhPid, _ := bs.Config.GetString("notehub", NOTEHUB_PID)
+	nhPsk, _ := bs.Config.GetString("notehub", NOTEHUB_PSK)
+	bs.NotehubMaxLines, _ = bs.Config.GetInt("notehub", NOTEHUB_MAXLINES)
 
-	bs.PastebinService = &pastebin.PastebinService{PostURL: pbHost, PostPath: pbPath}
+	svc := &notehub.NotehubService{PostURL: nhPostUrl}
+	creds := &notehub.NotehubCredentials{PublisherId: nhPid, PublisherSecretKey: nhPsk}
+	svc.NotehubCredentials = creds
+
+	bs.NotehubService = svc
 }
 
 func (bs *Bot3Server) AddHandler(key string, h server.BotHandler) {
@@ -240,13 +246,13 @@ func (bs *Bot3Server) HandleOutgoing(outgoingToNSQChan chan *server.BotResponse,
 
 func (bs *Bot3Server) PreProcessAndPublishOutgoing(msg *server.BotResponse, outputWriter *nsq.Producer) {
 
-	if len(msg.Response) > bs.PastebinMaxLines {
+	if len(msg.Response) > bs.NotehubMaxLines {
 		totalLineLength := len(msg.Response)
-		resp, _ := bs.PastebinService.CreatePastebin(msg.LinesAsByte())
-		msg.Response = msg.Response[0:bs.PastebinMaxLines]
+		resp, _ := bs.NotehubService.CreateDocument(msg.LinesAsByte())
+		msg.Response = msg.Response[0:bs.NotehubMaxLines]
 
-		resp = fmt.Sprintf("( ...remaining %d lines clipped. view all content at: %s )", (totalLineLength - bs.PastebinMaxLines), resp)
-		msg.Response = append(msg.Response, resp)
+		newLine := fmt.Sprintf("( ...remaining %d lines clipped. view all content at: %s )", (totalLineLength - bs.NotehubMaxLines), resp.ShortURL)
+		msg.Response = append(msg.Response, newLine)
 	}
 
 	val, _ := json.Marshal(msg)

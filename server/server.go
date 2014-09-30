@@ -81,7 +81,7 @@ func (response *BotResponse) LinesAsByte() []byte {
 	payload := make([]byte, 256)
 	for _, value := range response.Response {
 		payload = append(payload, value...)
-		payload = append(payload, "\n"...)
+		payload = append(payload, "\n\n"...)
 	}
 	return payload
 }
