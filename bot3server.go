@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	nsq "github.com/bitly/go-nsq"
+	"github.com/gamelost/bot3server/module/burningman"
 	"github.com/gamelost/bot3server/module/cah"
 	"github.com/gamelost/bot3server/module/catfacts"
 	"github.com/gamelost/bot3server/module/dice"
@@ -168,6 +169,7 @@ func (bs *Bot3Server) initServices() error {
 	bs.AddHandler("help", (new(help.HelpService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("remindme", (remindme.NewRemindMeService(bs.Config, bs.OutgoingChan)))
 	bs.AddHandler("nextwedding", (new(nextwedding.NextWeddingService)).NewService(bs.Config, bs.OutgoingChan))
+	bs.AddHandler("burningman", (new(burningman.BurningManService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("nextbaby", (new(nextbaby.NextBabyService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("weather", (new(wuconditions.WeatherConditionsService)).NewService(bs.Config, bs.OutgoingChan))
 	bs.AddHandler("forecast", (new(wuforecast.WeatherForecastService)).NewService(bs.Config, bs.OutgoingChan))
