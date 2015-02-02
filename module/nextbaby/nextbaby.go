@@ -29,10 +29,10 @@ func durationToDate() string {
 
 	nowDate := time.Now()
 	loc, _ := time.LoadLocation("America/Los_Angeles")
-	weddingDate := time.Date(2015, time.February, 24, 12, 0, 0, 0, loc)
+	weddingDate := time.Date(2015, time.February, 2, 01, 0, 0, 0, loc)
 
 	if nowDate.After(weddingDate) {
-		return "Ah mon. It be too late, has da baby popped out yet?!"
+		return "Baby done popped out! Congrats ashburn!"
 	} else {
 
 		duration := weddingDate.Sub(nowDate)
